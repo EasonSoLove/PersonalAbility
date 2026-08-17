@@ -1,0 +1,17 @@
+{
+  "source": "天天基金",
+  "synced_at": "2026-08-17",
+  "funds": [
+    {
+      "fund_code": "000001",
+      "fund_name": "测试指数基金",
+      "theme": "宽基",
+      "tracked_index": "测试指数",
+      "target_etf_code": "",
+      "target_etf_name": "",
+      "exchange": "",
+      "secid": "",
+      "source_url": "https://fund.eastmoney.com/000001.html"
+    }
+  ]
+}

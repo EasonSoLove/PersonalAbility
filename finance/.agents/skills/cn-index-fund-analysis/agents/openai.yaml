@@ -1,0 +1,7 @@
+interface:
+  display_name: "中国指数基金分析"
+  short_description: "同步天天基金信息并结合交易流水、K线与量能分析指数基金"
+  default_prompt: "使用 $cn-index-fund-analysis 更新基金信息，并按持仓状态完成流水与技术面分析。"
+
+policy:
+  allow_implicit_invocation: true
