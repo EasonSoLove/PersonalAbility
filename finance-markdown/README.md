@@ -1,6 +1,6 @@
 # 基金交易账本（YAML + CSV + Markdown）
 
-这是从旧版 Excel 工作簿迁移出来的文件化方案。旧目录 `D:\05-Personal Project\PersonalAbility\finance\` 不参与本项目运行，也不会被自动同步或修改。
+这是基金交易、持仓分析和技术面报告的文件化方案。
 
 ## 当前状态
 
@@ -8,8 +8,8 @@
 - 交易记录：34 笔
 - 已确认：32 笔
 - 待确认：2 笔
-- 迁移基准日期：2026-08-17
-- 最近确认净值日期：2026-08-14
+- 账本建立日期：2026-08-17
+- 最近确认净值日期：2026-08-17
 
 ## 目录分工
 
@@ -17,7 +17,7 @@
 |---|---|---|
 |`data/funds.yaml`|基金名称、指数、关联 ETF、费率和来源|按基金资料维护|
 |`data/transactions.csv`|正式交易账本，唯一交易事实来源|只能由原子导入程序写入|
-|`data/nav/latest-nav.json`|最近确认净值缓存|按净值更新|
+|`data/nav/latest-nav.json`|可选的最近确认净值快照|仅在当天更新并核验后使用|
 |`.agents/skills/cn-index-fund-analysis-files/scripts/`|校验、图片导入、持仓、技术面和报告脚本|代码维护|
 |`.agents/skills/cn-index-fund-analysis-files/docs/`|数据结构、图片录入和技术面口径|规则维护|
 |`.agents/skills/cn-index-fund-analysis-files/imports/`|图片示例、识别 JSON、中间批次和归档|图片流程维护|
@@ -51,9 +51,11 @@ python .agents/skills/cn-index-fund-analysis-files/scripts/image_import.py `
 
 ## 数据校验和报告
 
+默认不携带净值快照生成报告；如需计算当前市值和盈亏，先在当天更新并核验 `data/nav/latest-nav.json`，再显式传入 `--nav-json`。脚本会拒绝未在当天核验的快照。
+
 ```powershell
 python .agents/skills/cn-index-fund-analysis-files/scripts/validate_data.py
-python .agents/skills/cn-index-fund-analysis-files/scripts/generate_reports.py --nav-json data/nav/latest-nav.json
+python .agents/skills/cn-index-fund-analysis-files/scripts/generate_reports.py
 python .agents/skills/cn-index-fund-analysis-files/scripts/generate_reports.py --nav-json data/nav/latest-nav.json --technical --end YYYY-MM-DD
 python tests/run_tests.py
 ```

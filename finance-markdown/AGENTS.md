@@ -1,6 +1,6 @@
 # finance-markdown 项目规则
 
-1. 本目录是 YAML/CSV/Markdown 方案；不要修改相邻旧版 `finance` 目录。
+1. 本目录是 YAML/CSV/Markdown 方案；只修改当前项目目录内的文件。
 2. 先读取 `data/schema.json`、`data/funds.yaml` 和 `.agents/skills/cn-index-fund-analysis-files/docs/model-entry-protocol.md`。
 3. 正式交易唯一来源是 `data/transactions.csv`；持仓、成本、盈亏和现金流都是派生结果，不得手工写回。
 4. 交易录入只接受交易图片识别流程：使用 `.agents/skills/cn-index-fund-analysis-files/scripts/image_import.py` 预检和原子导入，不保留人工 CSV 录入入口。

@@ -5,6 +5,7 @@ import json
 import shutil
 import sys
 import tempfile
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,6 +15,7 @@ sys.path.insert(0, str(SCRIPTS))
 from common import load_schema, read_csv_rows
 from image_import import import_from_image
 from portfolio_analysis import analyze as analyze_portfolio
+from portfolio_analysis import inspect_nav_cache
 from technical_analysis import analyze as analyze_technical
 from validate_data import validate_project
 
@@ -49,17 +51,19 @@ def make_temp_project(base: Path) -> Path:
 def main() -> int:
     checked = validate_project(ROOT)
     assert checked["status"] == "OK", checked
+    checked_nav = validate_project(ROOT, ROOT / "data" / "nav" / "latest-nav.json", date(2026, 8, 18))
+    assert checked_nav["status"] == "OK", checked_nav
     assert checked["fund_count"] == 6
     assert checked["transaction_count"] == 34
     assert checked["pending_count"] == 2
 
-    portfolio = analyze_portfolio(ROOT, ROOT / "data" / "nav" / "latest-nav.json")
+    portfolio = analyze_portfolio(ROOT, ROOT / "data" / "nav" / "latest-nav.json", date(2026, 8, 18))
     assert portfolio["transaction_count"] == 32
     assert portfolio["pending_count"] == 2
     approx(portfolio["portfolio"]["remaining_cost"], 28158.77)
-    approx(portfolio["portfolio"]["market_value"], 23714.97)
-    approx(portfolio["portfolio"]["unrealized_pnl"], -4443.80)
-    approx(portfolio["portfolio"]["break_even_rise"], 0.187384, 0.000001)
+    approx(portfolio["portfolio"]["market_value"], 24712.21)
+    approx(portfolio["portfolio"]["unrealized_pnl"], -3446.56)
+    approx(portfolio["portfolio"]["break_even_rise"], 0.139468, 0.000001)
 
     technical_codes = ["021934", "023652", "024663", "015877", "027521"]
     technical = analyze_technical(str(ROOT / "data" / "funds.yaml"), technical_codes, end="2026-08-14", bars_json=str(ROOT / "tests" / "fixtures" / "etf-bars.json"))
@@ -74,6 +78,8 @@ def main() -> int:
     for item in technical["results"]:
         assert all(item.get(metric) is not None for metric in required_metrics), item
 
+    stale_status = inspect_nav_cache(ROOT / "data" / "nav" / "latest-nav.json", date(2026, 8, 19))
+    assert stale_status["errors"]
     with tempfile.TemporaryDirectory() as temp_name:
         temp = Path(temp_name)
         project = make_temp_project(temp)

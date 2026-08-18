@@ -15,7 +15,7 @@ from validate_data import validate_project
 
 def generate(root: str | Path, nav_json: str | Path | None = None, technical: bool = False, end: str | None = None, bars_json: str | None = None, nav_bars_json: str | None = None) -> dict[str, Any]:
     project = Path(root)
-    checked = validate_project(project)
+    checked = validate_project(project, nav_json)
     if checked["status"] != "OK":
         return {"status": "ERROR", "validation": checked, "outputs": {}}
     portfolio = analyze_portfolio(project, nav_json)

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from common import PROJECT_ROOT,  code6, decimal_or_none, fund_map, load_funds_yaml, load_schema, read_csv_rows, valid_iso_date
+from portfolio_analysis import inspect_nav_cache
 
 TX_ID_PATTERN = re.compile(r"^TX-\d{8}-\d{6}-\d{3,}$")
 SECID_PATTERN = re.compile(r"^[01]\.\d{6}$")
@@ -161,12 +162,13 @@ def validate_transactions(path: str | Path, funds_path: str | Path, schema_path:
     return {"errors": errors, "warnings": warnings, "transaction_count": len(rows), "pending_count": pending_count}
 
 
-def validate_project(root: str | Path) -> dict[str, Any]:
+def validate_project(root: str | Path, nav_json: str | Path | None = None, as_of: date | None = None) -> dict[str, Any]:
     project = Path(root)
     funds_result = validate_funds(project / "data" / "funds.yaml")
     tx_result = validate_transactions(project / "data" / "transactions.csv", project / "data" / "funds.yaml", project / "data" / "schema.json")
-    errors = funds_result["errors"] + tx_result["errors"]
-    warnings = funds_result["warnings"] + tx_result["warnings"]
+    nav_result = inspect_nav_cache(nav_json, as_of) if nav_json else {"errors": [], "warnings": []}
+    errors = funds_result["errors"] + tx_result["errors"] + nav_result["errors"]
+    warnings = funds_result["warnings"] + tx_result["warnings"] + nav_result["warnings"]
     return {
         "status": "OK" if not errors else "ERROR",
         "schema_version": load_schema(project / "data" / "schema.json").get("version"),
@@ -175,6 +177,7 @@ def validate_project(root: str | Path) -> dict[str, Any]:
         "pending_count": tx_result["pending_count"],
         "errors": errors,
         "warnings": warnings,
+        "nav_cache": nav_result,
     }
 
 
@@ -182,8 +185,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="校验YAML基金档案和CSV交易账本")
     parser.add_argument("--root", default=str(PROJECT_ROOT))
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--nav-json")
+    parser.add_argument("--as-of")
     args = parser.parse_args()
-    result = validate_project(args.root)
+    as_of = date.fromisoformat(args.as_of) if args.as_of else None
+    result = validate_project(args.root, args.nav_json, as_of)
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:

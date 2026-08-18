@@ -5,7 +5,7 @@ description: 维护 finance-markdown 的 YAML/CSV/Markdown 基金账本、图片
 
 # 中国指数基金文件化账本
 
-本技能只操作当前 `finance-markdown` 项目，不修改相邻旧版 `finance` 目录。
+本技能只操作当前 `finance-markdown` 项目。
 
 ## 目录边界
 

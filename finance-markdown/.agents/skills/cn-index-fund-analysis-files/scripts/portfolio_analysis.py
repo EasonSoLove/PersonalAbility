@@ -11,12 +11,53 @@ from typing import Any
 from common import PROJECT_ROOT,  code6, decimal_or_none, dump_json, fund_map, load_json, load_schema, number, read_csv_rows
 
 
-def load_navs(path: str | Path | None) -> tuple[dict[str, float], str, str]:
+
+def inspect_nav_cache(path: str | Path, as_of: date | None = None) -> dict[str, Any]:
+    """Validate that a NAV snapshot was checked today and is not future-dated."""
+    errors: list[str] = []
+    raw = load_json(path)
+    if not isinstance(raw, dict):
+        return {"errors": ["净值快照必须是JSON对象"], "warnings": [], "confirmed_date": "", "checked_at": ""}
+
+    confirmed_text = str(raw.get("confirmed_date") or raw.get("as_of") or "")
+    checked_text = str(raw.get("checked_at") or "")
+    reference = as_of or date.today()
+    try:
+        confirmed = date.fromisoformat(confirmed_text)
+    except ValueError:
+        confirmed = None
+        errors.append(f"净值快照确认日期无效：{confirmed_text!r}")
+    try:
+        checked = date.fromisoformat(checked_text)
+    except ValueError:
+        checked = None
+        errors.append(f"净值快照核验日期无效：{checked_text!r}")
+
+    if checked and checked != reference:
+        errors.append(f"净值快照未在{reference.isoformat()}当天核验，实际核验日期为{checked.isoformat()}")
+    if confirmed and confirmed > reference:
+        errors.append(f"净值快照确认日期{confirmed.isoformat()}晚于核验日期{reference.isoformat()}")
+    if confirmed and checked and confirmed > checked:
+        errors.append(f"净值快照确认日期{confirmed.isoformat()}晚于核验日期{checked.isoformat()}")
+
+    return {
+        "errors": errors,
+        "warnings": [],
+        "confirmed_date": confirmed_text,
+        "checked_at": checked_text,
+        "source": str(raw.get("source") or ""),
+    }
+
+def load_navs(path: str | Path | None, as_of: date | None = None) -> tuple[dict[str, float], str, str, str]:
     if not path:
-        return {}, "", ""
+        return {}, "", "", ""
+    cache_status = inspect_nav_cache(path, as_of)
+    if cache_status["errors"]:
+        raise ValueError("；".join(cache_status["errors"]))
     raw = load_json(path)
     nav_date = str(raw.get("confirmed_date") or raw.get("as_of") or "") if isinstance(raw, dict) else ""
     source = str(raw.get("source") or "") if isinstance(raw, dict) else ""
+    checked_at = str(raw.get("checked_at") or "") if isinstance(raw, dict) else ""
     body = raw.get("funds", raw) if isinstance(raw, dict) else raw
     result: dict[str, float] = {}
     if isinstance(body, list):
@@ -30,21 +71,21 @@ def load_navs(path: str | Path | None) -> tuple[dict[str, float], str, str]:
             nav = value.get("latest_nav", value.get("nav")) if isinstance(value, dict) else value
             if nav not in (None, ""):
                 result[code6(key)] = number(nav)
-    return result, nav_date, source
+    return result, nav_date, source, checked_at
 
 
 def amount(row: dict[str, str], field: str) -> float:
     return number(row.get(field), 0.0)
 
 
-def analyze(root: str | Path, nav_json: str | Path | None = None) -> dict[str, Any]:
+def analyze(root: str | Path, nav_json: str | Path | None = None, as_of: date | None = None) -> dict[str, Any]:
     project = Path(root)
     schema = load_schema(project / "data" / "schema.json")["transactions"]
     headers, ledger = read_csv_rows(project / "data" / "transactions.csv")
     if headers != schema["headers"]:
         raise ValueError("交易账本表头与Schema不一致")
     funds = fund_map(project / "data" / "funds.yaml")
-    navs, nav_date, nav_source = load_navs(nav_json)
+    navs, nav_date, nav_source, nav_checked_at = load_navs(nav_json, as_of)
     confirmed = [r for r in ledger if r.get("确认状态") == "已确认"]
     pending = [r for r in ledger if r.get("确认状态") == "待确认"]
     voided = [r for r in ledger if r.get("确认状态") == "已作废"]
@@ -172,6 +213,7 @@ def analyze(root: str | Path, nav_json: str | Path | None = None) -> dict[str, A
         },
         "nav_confirmed_date": nav_date,
         "nav_source": nav_source,
+        "nav_checked_at": nav_checked_at,
         "warnings": warnings,
     }
 
@@ -192,6 +234,7 @@ def current_portfolio_markdown(result: dict[str, Any]) -> str:
         f"> 报告生成日期：{result['generated_at']}",
         f"> 最近确认净值日期：{result['nav_confirmed_date'] or '未提供'}",
         f"> 净值来源：{result['nav_source'] or '未提供'}",
+        f"> 净值快照核验日期：{result['nav_checked_at'] or '未提供'}",
         "",
         f"- 分析分支：{branch}",
         f"- 已确认交易：{result['transaction_count']}笔",

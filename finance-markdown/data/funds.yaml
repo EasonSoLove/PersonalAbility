@@ -1,6 +1,6 @@
 schema_version: "1.0.0"
 updated_at: "2026-08-17"
-source: "天天基金；由旧版Excel迁移"
+source: "天天基金"
 funds:
   - code: "021934"
     name: "富国中证通信设备主题ETF发起式联接C"
