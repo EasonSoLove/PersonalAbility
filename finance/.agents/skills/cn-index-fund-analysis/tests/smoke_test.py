@@ -42,8 +42,9 @@ def main() -> int:
     assert empty["analysis_mode"] == "technical_only"
     assert empty["transaction_count"] == 0
 
-    technical = analyze_technical(str(mapping), end="2026-08-14", bars_json=str(fixtures / "etf-bars.json"))
-    assert len(technical["results"]) == 5
+    fixture_codes = ["021934", "023652", "024663", "015877", "027521"]
+    technical = analyze_technical(str(mapping), fixture_codes, end="2026-08-14", bars_json=str(fixtures / "etf-bars.json"))
+    assert len(technical["results"]) == len(fixture_codes)
     assert not [x for x in technical["results"] if x.get("status") == "error"]
 
     nav_only = analyze_technical(str(fixtures / "nav-only-map.json"), ["000001"], end="2026-08-14", nav_bars_json=str(fixtures / "nav-bars.json"))

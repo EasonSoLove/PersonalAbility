@@ -1,0 +1,26 @@
+{
+  "source": "天天基金缓存",
+  "confirmed_date": "2026-08-14",
+  "funds": [
+    {
+      "fund_code": "021934",
+      "latest_nav": 3.4726
+    },
+    {
+      "fund_code": "023652",
+      "latest_nav": 2.1227
+    },
+    {
+      "fund_code": "027521",
+      "latest_nav": 0.9624
+    },
+    {
+      "fund_code": "015877",
+      "latest_nav": 1.9678
+    },
+    {
+      "fund_code": "024663",
+      "latest_nav": 2.0039
+    }
+  ]
+}
