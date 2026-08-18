@@ -8,7 +8,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from common import code6, decimal_or_none, dump_json, fund_map, load_json, load_schema, number, read_csv_rows
+from common import PROJECT_ROOT,  code6, decimal_or_none, dump_json, fund_map, load_json, load_schema, number, read_csv_rows
 
 
 def load_navs(path: str | Path | None) -> tuple[dict[str, float], str, str]:
@@ -237,7 +237,7 @@ def transaction_check_markdown(result: dict[str, Any]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="从CSV交易账本计算持仓、成本、盈亏和待确认交易")
-    parser.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
+    parser.add_argument("--root", default=str(PROJECT_ROOT))
     parser.add_argument("--nav-json")
     parser.add_argument("--format", choices=["json", "portfolio-md", "check-md"], default="json")
     parser.add_argument("--output")

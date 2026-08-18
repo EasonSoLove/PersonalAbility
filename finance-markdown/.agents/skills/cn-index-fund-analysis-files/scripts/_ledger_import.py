@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import shutil
-import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from common import code6, load_schema, read_csv_rows, write_csv_atomic
+from common import PROJECT_ROOT, code6, load_schema, read_csv_rows, write_csv_atomic
 from validate_data import possible_duplicate_key, validate_transactions
 
 BUSINESS_FIELDS = ["申请日期", "确认日期", "基金代码", "交易类型", "申请成交金额", "确认份额", "确认净值", "手续费", "实际到账分红", "确认状态", "策略标签", "备注", "关联交易ID"]
@@ -152,7 +150,7 @@ def import_batch(root: str | Path, batch_path: str | Path, commit: bool = False,
 
     if commit:
         write_csv_atomic(ledger_path, canonical_headers, candidate)
-        archive_dir = project / "archive" / "imported-batches"
+        archive_dir = project / ".agents" / "skills" / "cn-index-fund-analysis-files" / "imports" / "archive"
         archive_dir.mkdir(parents=True, exist_ok=True)
         archive_path = archive_dir / f"{batch_id}-{batch.name}"
         shutil.copy2(batch, archive_path)
@@ -172,19 +170,3 @@ def import_batch(root: str | Path, batch_path: str | Path, commit: bool = False,
         "warnings": warnings,
     }
 
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description="预检或原子导入人工/模型生成的交易批次")
-    parser.add_argument("batch")
-    parser.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
-    parser.add_argument("--source", choices=["人工", "模型", "历史迁移"], default="模型")
-    parser.add_argument("--commit", action="store_true", help="验证通过后写入正式账本；默认仅预检")
-    parser.add_argument("--allow-possible-duplicate", action="store_true")
-    args = parser.parse_args()
-    result = import_batch(args.root, args.batch, args.commit, args.source, args.allow_possible_duplicate)
-    print(json.dumps(result, ensure_ascii=False, indent=2))
-    return 0 if result["status"] == "OK" else 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())

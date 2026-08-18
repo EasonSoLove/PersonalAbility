@@ -9,7 +9,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from common import code6, decimal_or_none, fund_map, load_funds_yaml, load_schema, read_csv_rows, valid_iso_date
+from common import PROJECT_ROOT,  code6, decimal_or_none, fund_map, load_funds_yaml, load_schema, read_csv_rows, valid_iso_date
 
 TX_ID_PATTERN = re.compile(r"^TX-\d{8}-\d{6}-\d{3,}$")
 SECID_PATTERN = re.compile(r"^[01]\.\d{6}$")
@@ -180,7 +180,7 @@ def validate_project(root: str | Path) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="校验YAML基金档案和CSV交易账本")
-    parser.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
+    parser.add_argument("--root", default=str(PROJECT_ROOT))
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     result = validate_project(args.root)

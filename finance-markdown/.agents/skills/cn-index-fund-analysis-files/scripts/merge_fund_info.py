@@ -6,7 +6,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from common import code6, dump_funds_yaml, load_funds_yaml, load_json, write_text_atomic
+from common import PROJECT_ROOT,  code6, dump_funds_yaml, load_funds_yaml, load_json, write_text_atomic
 
 
 def merge(funds_path: str | Path, query_json: str | Path) -> dict:
@@ -55,7 +55,7 @@ def merge(funds_path: str | Path, query_json: str | Path) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description="把天天基金查询JSON安全合并到funds.yaml")
     parser.add_argument("query_json")
-    parser.add_argument("--funds", default=str(Path(__file__).resolve().parents[1] / "data" / "funds.yaml"))
+    parser.add_argument("--funds", default=str(PROJECT_ROOT / "data" / "funds.yaml"))
     args = parser.parse_args()
     result = merge(args.funds, args.query_json)
     print(json.dumps(result, ensure_ascii=False, indent=2))

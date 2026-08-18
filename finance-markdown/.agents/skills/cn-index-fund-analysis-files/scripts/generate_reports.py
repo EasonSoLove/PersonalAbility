@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from common import fund_map, write_text_atomic
+from common import PROJECT_ROOT, fund_map, write_text_atomic
 from portfolio_analysis import analyze as analyze_portfolio
 from portfolio_analysis import current_portfolio_markdown, transaction_check_markdown
 from technical_analysis import analyze as analyze_technical, markdown as technical_markdown
@@ -19,7 +19,7 @@ def generate(root: str | Path, nav_json: str | Path | None = None, technical: bo
     if checked["status"] != "OK":
         return {"status": "ERROR", "validation": checked, "outputs": {}}
     portfolio = analyze_portfolio(project, nav_json)
-    generated = project / "generated"
+    generated = project / "reports"
     generated.mkdir(parents=True, exist_ok=True)
     portfolio_path = generated / "current-portfolio.md"
     check_path = generated / "transaction-check.md"
@@ -47,7 +47,7 @@ def generate(root: str | Path, nav_json: str | Path | None = None, technical: bo
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="校验数据并生成当前持仓、流水检查和可选技术面Markdown")
-    parser.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
+    parser.add_argument("--root", default=str(PROJECT_ROOT))
     parser.add_argument("--nav-json")
     parser.add_argument("--technical", action="store_true")
     parser.add_argument("--end")

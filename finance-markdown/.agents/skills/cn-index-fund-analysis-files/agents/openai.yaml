@@ -1,7 +1,7 @@
 interface:
   display_name: "中国指数基金文件账本"
   short_description: "用YAML、CSV和Markdown维护基金流水、持仓与技术分析"
-  default_prompt: "使用 $cn-index-fund-analysis-files 校验并维护CSV交易账本，生成持仓和技术面Markdown报告。"
+  default_prompt: "使用 $cn-index-fund-analysis-files 从交易图片识别并预检/原子导入交易，校验账本并生成持仓和完整技术面Markdown报告。"
 
 policy:
   allow_implicit_invocation: true

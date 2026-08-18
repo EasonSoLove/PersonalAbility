@@ -12,7 +12,15 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Iterable
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+def find_project_root(start: Path | None = None) -> Path:
+    current = (start or Path(__file__)).resolve()
+    for candidate in (current, *current.parents):
+        if (candidate / "data" / "schema.json").is_file() and (candidate / "data" / "funds.yaml").is_file():
+            return candidate
+    raise RuntimeError("无法定位 finance-markdown 项目根目录")
+
+
+PROJECT_ROOT = find_project_root()
 DEFAULT_SCHEMA = PROJECT_ROOT / "data" / "schema.json"
 DEFAULT_FUNDS = PROJECT_ROOT / "data" / "funds.yaml"
 DEFAULT_TRANSACTIONS = PROJECT_ROOT / "data" / "transactions.csv"

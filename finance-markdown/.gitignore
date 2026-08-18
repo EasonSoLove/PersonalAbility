@@ -1,4 +1,5 @@
 __pycache__/
 *.pyc
-inbox/batches/*.tmp
-data/.transactions-candidate-*.csv
+.agents/skills/cn-index-fund-analysis-files/imports/pending/*.tmp
+.agents/skills/cn-index-fund-analysis-files/imports/pending/*.csv
+.agents/skills/cn-index-fund-analysis-files/imports/pending/*.json
