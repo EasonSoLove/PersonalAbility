@@ -131,7 +131,7 @@ def write_csv_atomic(path: str | Path, headers: list[str], rows: Iterable[dict[s
     target.parent.mkdir(parents=True, exist_ok=True)
     fd, temp_name = tempfile.mkstemp(prefix=target.name + ".", suffix=".tmp", dir=str(target.parent))
     try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
+        with os.fdopen(fd, "w", encoding="utf-8-sig", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=headers, extrasaction="ignore", lineterminator="\n")
             writer.writeheader()
             for row in rows:
