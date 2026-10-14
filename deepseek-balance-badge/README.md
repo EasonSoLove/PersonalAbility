@@ -16,7 +16,9 @@
 
 > 想先看长什么样：直接双击 `preview.html`，那是与真实样式一致的静态预览。
 
-安装后 API Key 已经预置好了（写在 `background.js` 的 `DEFAULT_SETTINGS.apiKey`），点开工具栏图标即可看到余额。换 Key 在弹窗的「设置」里改。
+> **首次使用需要自己填 API Key**：本仓库不预置任何密钥（`DEFAULT_SETTINGS.apiKey` 为空字符串）。
+> 安装后点工具栏图标 →「设置」→ 填入自己的 Key（在 [DeepSeek 开放平台](https://platform.deepseek.com/api_keys) 申请）。
+> 填之前角标显示 `!`，悬停会提示「未设置 API Key（点击填写）」。
 
 ---
 
@@ -89,6 +91,8 @@ node tools/test-background.js  # 后台逻辑：桩掉 chrome API + fetch，34 �
 ## 注意事项
 
 - API Key 存在 `chrome.storage.local`，**只在本机、不上云**。但任何能读到该浏览器 profile 目录的人都能拿到明文 Key，公用电脑上别装。
-- Key 泄露或想换：改 `DEFAULT_SETTINGS.apiKey` 或直接在弹窗里替换，然后去 DeepSeek 控制台吊销旧 Key。
+- Key 泄露或想换：直接在弹窗「设置」里替换，然后去 DeepSeek 控制台吊销旧 Key。
+- **不要把真实 Key 写进 `DEFAULT_SETTINGS.apiKey`**，也不要提交进本仓库任何文件——一旦进了 git 历史，改代码是删不掉的，只能吊销 Key。
+  需要在本地开发时预置 Key，用弹窗设置（写入 `chrome.storage.local`）即可，那份数据不会被 git 跟踪。
 - `chrome.alarms` 在浏览器完全退出时不触发（这是浏览器的设计），重新打开浏览器会立即补一次请求。
 - 手动改系统时间或浏览器休眠可能导致定时器延后，角标上的「更新于」始终是真实的最后请求时间。

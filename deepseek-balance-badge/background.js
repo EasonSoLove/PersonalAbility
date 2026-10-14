@@ -12,9 +12,15 @@
 const BALANCE_URL = 'https://api.deepseek.com/user/balance';
 const ALARM_NAME = 'ds-balance-refresh';
 
-/** 可在弹窗里改写的设置项（默认值即开箱可用） */
+/**
+ * 可在弹窗里改写的设置项。
+ *
+ * ⚠️ apiKey 不预置任何密钥 —— 保持空字符串，避免真实 Key 随代码进版本库。
+ * 留空时状态为 nokey：角标显示「!」，标题提示「未设置 API Key（点击填写）」，
+ * 用户在弹窗「设置」里填入自己的 Key 后即自动生效。
+ */
 const DEFAULT_SETTINGS = {
-  apiKey: 'sk-mock-0000000000000000000000000000',
+  apiKey: '',
   lowThreshold: 10, // 余额低于该值 → 红色
   intervalMinutes: 10, // 自动刷新间隔（分钟）
   showBadge: true, // 是否在网页上显示悬浮角标

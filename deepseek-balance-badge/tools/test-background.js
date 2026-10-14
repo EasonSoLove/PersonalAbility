@@ -13,6 +13,9 @@ const vm = require('vm');
 const ROOT = path.dirname(__dirname);
 const source = fs.readFileSync(path.join(ROOT, 'background.js'), 'utf8');
 
+/** 测试专用假 Key —— 仅为断言 Authorization 头拼接；切勿替换成真实密钥 */
+const MOCK_API_KEY = 'sk-mock-0000000000000000000000000000';
+
 let passed = 0;
 let failed = 0;
 function check(name, cond, extra) {
@@ -85,6 +88,9 @@ globalThis.fetch = (url, opts) => {
 
 vm.runInThisContext(source, { filename: 'background.js' });
 
+// background.js 默认不带 Key（见 DEFAULT_SETTINGS），测试里显式塞入假 Key
+store.apiKey = MOCK_API_KEY;
+
 /** 发一条 refresh 消息，等它跑完 */
 function sendRefresh(reason) {
   return new Promise((resolve) => {
@@ -121,7 +127,7 @@ function err(status, body) {
   check('请求命中官方余额接口', fetchCalls[0].url === 'https://api.deepseek.com/user/balance', fetchCalls[0].url);
   check(
     '带上了 Bearer 鉴权头',
-    fetchCalls[0].opts.headers.Authorization === 'Bearer sk-mock-0000000000000000000000000000',
+    fetchCalls[0].opts.headers.Authorization === 'Bearer ' + MOCK_API_KEY,
     fetchCalls[0].opts.headers.Authorization
   );
   check('余额解析为数字 99.07', store.state.amount === 99.07, store.state.amount);
@@ -214,7 +220,7 @@ function err(status, body) {
   check('Key 为空 → 状态 nokey', store.state.status === 'nokey', store.state.status);
   check('角标显示 !', badge.text === '!', badge.text);
 
-  store.apiKey = 'sk-mock-0000000000000000000000000000';
+  store.apiKey = MOCK_API_KEY;
   store.intervalMinutes = 5;
   listeners.changed.forEach((f) => f({ intervalMinutes: { newValue: 5 } }, 'local'));
   await tick(20);
