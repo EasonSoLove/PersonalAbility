@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>DeepSeek 余额角标 — 效果预览</title>
+<style>
+  :root {
+    --green: #22c55e;
+    --red: #dc2626;
+    --gray: #6b7280;
+    --ink: #0f172a;
+    --ink-2: #475569;
+    --ink-3: #94a3b8;
+    --line: #e6ebf2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 34px 28px 60px;
+    background: #f4f6fa;
+    color: var(--ink);
+    font: 400 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  }
+  .page { max-width: 860px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 21px; letter-spacing: .2px; }
+  .sub { margin: 0 0 26px; color: var(--ink-2); font-size: 13px; }
+  h2 {
+    margin: 30px 0 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .card {
+    position: relative;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    overflow: visible;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .case { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .case .label { font-size: 11.5px; color: var(--ink-3); }
+
+  /* ---------- 真实角标样式（与 content.js 内阴影 DOM 完全一致） ---------- */
+  .wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.06);
+    font: 400 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    cursor: grab;
+    user-select: none;
+  }
+  .whale { flex: none; width: 19px; height: 19px; margin: 0 5px 0 3px; color: #111; }
+  .whale img { display: block; width: 100%; height: 100%; }
+  .pill {
+    min-width: 36px;
+    padding: 4px 7px;
+    border-radius: 7px;
+    background: var(--green);
+    color: #04240f;
+    font: 700 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    letter-spacing: .2px;
+  }
+  .pill.low { background: var(--red); color: #fff; }
+  .pill.err { background: var(--gray); color: #fff; }
+  .pill.loading { background: #e5e7eb; color: var(--gray); }
+
+  .tip {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 9px);
+    width: 194px;
+    padding: 9px 10px;
+    border-radius: 9px;
+    background: #111827;
+    color: #f9fafb;
+    font: 400 11px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.32);
+    text-align: left;
+  }
+  .tip-amount { font-weight: 700; font-size: 15px; margin: 1px 0 4px; }
+  .tip-amount.low { color: #fca5a5; }
+  .tip-title { font-weight: 600; }
+  .tip-dim { opacity: .62; }
+
+  /* ---------- 工具栏图标模拟 ---------- */
+  .toolbar {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: #dfe3ea;
+  }
+  .tb-btn {
+    position: relative;
+    width: 30px; height: 30px;
+    display: grid; place-items: center;
+    border-radius: 7px;
+    background: transparent;
+  }
+  .tb-btn img { width: 18px; height: 18px; opacity: .85; }
+  .tb-btn .badge {
+    position: absolute;
+    right: -2px; bottom: -2px;
+    min-width: 16px;
+    padding: 1px 3px;
+    border-radius: 4px;
+    background: var(--green);
+    color: #fff;
+    font: 600 9px/1.35 -apple-system, "Segoe UI", sans-serif;
+    text-align: center;
+  }
+  .tb-btn .badge.low { background: var(--red); }
+  .tb-btn .badge.err { background: var(--gray); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+  th { font-size: 11.5px; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  td code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    font-size: 12px;
+  }
+  .muted { color: var(--ink-3); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>DeepSeek 余额角标 · 效果预览</h1>
+  <p class="sub">下面是插件注入到网页右下角后的真实外观（样式与代码完全一致），以及工具栏图标的角标效果。</p>
+
+  <h2>网页上的悬浮角标</h2>
+  <div class="card">
+    <div class="row">
+      <div class="case">
+        <span class="wrap">
+          <span class="whale"><img src="assets/whale.svg" alt=""></span>
+          <span class="pill">99.07</span>
+          <div class="tip" style="opacity:1;visibility:visible;transform:none;">
+            <div class="tip-title">DeepSeek 余额</div>
+            <div class="tip-amount">¥99.07</div>
+            <div>充值 ¥99.07 · 赠金 ¥0.00</div>
+            <div>接口状态：可用</div>
+            <div class="tip-dim">更新于 16:22:05 · 每 10 分钟自动刷新</div>
+            <div class="tip-dim">悬停即刷新 · 单击强制刷新 · 拖动可移动</div>
+          </div>
+        </span>
+        <span class="label">① 正常（≥ 10 元）· 绿色 + 悬停提示</span>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:64px;">
+      <div class="case">
+        <span class="wrap">
+          <span class="whale"><img src="assets/whale.svg" alt=""></span>
+          <span class="pill low">6.80</span>
+        </span>
+        <span class="label">② 余额低于 10 元 · 变红</span>
+      </div>
+      <div class="case">
+        <span class="wrap">
+          <span class="whale"><img src="assets/whale.svg" alt=""></span>
+          <span class="pill err">!</span>
+        </span>
+        <span class="label">③ 请求失败（Key 错误 / 断网）</span>
+      </div>
+      <div class="case">
+        <span class="wrap">
+          <span class="whale"><img src="assets/whale.svg" alt=""></span>
+          <span class="pill loading">···</span>
+        </span>
+        <span class="label">④ 首次加载中</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>浏览器工具栏图标</h2>
+  <div class="card">
+    <div class="row">
+      <div class="toolbar">
+        <span class="tb-btn"><img src="assets/whale.svg" alt=""><span class="badge">99</span></span>
+        <span class="tb-btn"><img src="assets/whale.svg" alt=""><span class="badge low">6.8</span></span>
+        <span class="tb-btn"><img src="assets/whale.svg" alt=""><span class="badge err">!</span></span>
+      </div>
+      <span class="muted">黑色虎鲸图标 + 实时金额角标（绿 / 红 / 灰）。在任何页面都能看到，包括内容脚本无法注入的页面。</span>
+    </div>
+  </div>
+
+  <h2>交互与刷新时机</h2>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>触发方式</th><th>行为</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>定时器</td><td>每 10 分钟自动请求一次（<code>chrome.alarms</code>，浏览器后台也在跑）</td></tr>
+        <tr><td>鼠标悬停角标</td><td>立即请求一次，30 秒节流，防止来回划过时狂刷接口</td></tr>
+        <tr><td>窗口 / 标签页重新聚焦</td><td>切回该页面时立即请求一次</td></tr>
+        <tr><td>单击角标</td><td>强制刷新一次（不受节流限制）</td></tr>
+        <tr><td>拖动角标</td><td>移动到任意位置，位置本地记忆</td></tr>
+        <tr><td>双击角标</td><td>隐藏角标（可在弹窗里重新打开）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="muted" style="margin-top:22px;">
+    预览用静态页，不请求接口。真实数据由后台 Service Worker 调用
+    <code>GET https://api.deepseek.com/user/balance</code> 获取。
+  </p>
+</div>
+</body>
+</html>

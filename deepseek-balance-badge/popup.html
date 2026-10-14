@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>DeepSeek 余额</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header class="head">
+    <img class="logo" src="assets/whale.svg" alt="DeepSeek" />
+    <div class="head-text">
+      <h1>DeepSeek 余额</h1>
+      <p id="updated">—</p>
+    </div>
+    <button id="refresh" class="refresh" title="立即刷新">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5V2L7.5 6.5 12 11V8a4.5 4.5 0 1 1-4.4 5.4l-1.9.4A6.5 6.5 0 1 0 12 5Z"/>
+      </svg>
+    </button>
+  </header>
+
+  <section class="hero">
+    <div id="amount" class="amount">—</div>
+    <div id="statusLine" class="status-line">—</div>
+  </section>
+
+  <section class="grid">
+    <div class="cell">
+      <span>充值余额</span>
+      <b id="topped">—</b>
+    </div>
+    <div class="cell">
+      <span>赠金余额</span>
+      <b id="granted">—</b>
+    </div>
+    <div class="cell">
+      <span>接口状态</span>
+      <b id="available">—</b>
+    </div>
+    <div class="cell">
+      <span>自动刷新</span>
+      <b id="interval">—</b>
+    </div>
+  </section>
+
+  <p id="error" class="error" hidden></p>
+
+  <details class="settings">
+    <summary>设置</summary>
+
+    <label class="field">
+      <span>API Key</span>
+      <input id="apiKey" type="password" spellcheck="false" autocomplete="off" placeholder="sk-..." />
+    </label>
+
+    <div class="two">
+      <label class="field">
+        <span>低于此值变红</span>
+        <input id="threshold" type="number" min="0" step="1" />
+      </label>
+      <label class="field">
+        <span>刷新间隔（分钟）</span>
+        <input id="intervalInput" type="number" min="1" max="1440" step="1" />
+      </label>
+    </div>
+
+    <label class="check">
+      <input id="showBadge" type="checkbox" />
+      <span>在网页上显示悬浮角标</span>
+    </label>
+
+    <div class="actions">
+      <button id="save" class="primary">保存</button>
+      <span id="saved" class="saved"></span>
+    </div>
+
+    <p class="hint">
+      Key 只写进本机 <code>chrome.storage.local</code>，不会同步到云端账号，也不经过任何第三方服务器。
+      接口参考：<code>GET /user/balance</code>
+    </p>
+  </details>
+
+  <script src="popup.js"></script>
+</body>
+</html>
