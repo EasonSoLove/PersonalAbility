@@ -12,12 +12,14 @@
       <h1>DeepSeek 余额</h1>
       <p id="updated">—</p>
     </div>
-    <button id="refresh" class="refresh" title="立即刷新">
+    <button id="refresh" class="refresh" title="立即刷新全部 Key">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 5V2L7.5 6.5 12 11V8a4.5 4.5 0 1 1-4.4 5.4l-1.9.4A6.5 6.5 0 1 0 12 5Z"/>
       </svg>
     </button>
   </header>
+
+  <nav id="tabs" class="tabs" hidden aria-label="切换 Key"></nav>
 
   <section class="hero">
     <div id="amount" class="amount">—</div>
@@ -45,13 +47,18 @@
 
   <p id="error" class="error" hidden></p>
 
-  <details class="settings">
+  <details class="settings" id="settings">
     <summary>设置</summary>
 
-    <label class="field">
-      <span>API Key</span>
-      <input id="apiKey" type="password" spellcheck="false" autocomplete="off" placeholder="sk-..." />
-    </label>
+    <div class="keys-head">
+      <span>API Key（可配置多个，角标上左右箭头切换）</span>
+    </div>
+    <div id="keyList" class="key-list"></div>
+    <div class="keys-foot">
+      <button id="addKey" class="ghost" type="button">＋ 添加 Key</button>
+      <span id="keyCount" class="key-count"></span>
+    </div>
+    <p id="keyHint" class="sub-hint" hidden></p>
 
     <div class="two">
       <label class="field">
@@ -76,10 +83,12 @@
 
     <p class="hint">
       Key 只写进本机 <code>chrome.storage.local</code>，不会同步到云端账号，也不经过任何第三方服务器。
+      「默认」决定工具栏角标和新页面角标先显示哪个 Key，其余 Key 用角标上的左右箭头切换。
       接口参考：<code>GET /user/balance</code>
     </p>
   </details>
 
+  <script src="keys.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

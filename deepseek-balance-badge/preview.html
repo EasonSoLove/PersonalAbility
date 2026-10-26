@@ -79,11 +79,32 @@
   .pill.err { background: var(--gray); color: #fff; }
   .pill.loading { background: #e5e7eb; color: var(--gray); }
 
+  /* 多 Key：左右切换箭头 + 当前 Key 名字 */
+  .nav {
+    flex: none;
+    width: 15px; height: 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin: 0; padding: 0;
+    border: 0; border-radius: 5px;
+    background: transparent;
+    color: #94a3b8;
+    font: 700 13px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    cursor: pointer;
+  }
+  .nav:hover { background: #eef2f7; color: #0f172a; }
+  .key-tag {
+    max-width: 62px;
+    margin: 0 3px 0 5px;
+    color: #64748b;
+    font: 400 10px/1 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
   .tip {
     position: absolute;
     right: 0;
     bottom: calc(100% + 9px);
-    width: 194px;
+    width: 212px;
     padding: 9px 10px;
     border-radius: 9px;
     background: #111827;
@@ -95,6 +116,20 @@
   .tip-amount { font-weight: 700; font-size: 15px; margin: 1px 0 4px; }
   .tip-amount.low { color: #fca5a5; }
   .tip-title { font-weight: 600; }
+  .tip-key {
+    display: flex; align-items: center; gap: 5px;
+    margin: 2px 0 1px;
+    font-size: 10.5px;
+    color: #cbd5e1;
+  }
+  .tip-def {
+    padding: 0 4px;
+    border-radius: 4px;
+    background: rgba(34, 197, 94, .2);
+    color: #86efac;
+    font-size: 9.5px;
+    line-height: 14px;
+  }
   .tip-dim { opacity: .62; }
 
   /* ---------- 工具栏图标模拟 ---------- */
@@ -143,51 +178,77 @@
 <body>
 <div class="page">
   <h1>DeepSeek 余额角标 · 效果预览</h1>
-  <p class="sub">下面是插件注入到网页右下角后的真实外观（样式与代码完全一致），以及工具栏图标的角标效果。</p>
+  <p class="sub">下面是插件注入到网页右下角后的真实外观（样式与代码完全一致），以及工具栏图标的角标效果。配置多个 Key 后，角标上会出现左右箭头用于切换。</p>
 
   <h2>网页上的悬浮角标</h2>
-  <div class="card">
-    <div class="row">
+  <div class="card" style="padding-top:188px;">
+    <div class="row" style="justify-content:flex-end;">
       <div class="case">
         <span class="wrap">
           <span class="whale"><img src="assets/whale.svg" alt=""></span>
+          <button class="nav" type="button">‹</button>
           <span class="pill">99.07</span>
+          <button class="nav" type="button">›</button>
+          <span class="key-tag">工作号</span>
           <div class="tip" style="opacity:1;visibility:visible;transform:none;">
             <div class="tip-title">DeepSeek 余额</div>
+            <div class="tip-key">1/3 · 工作号<span class="tip-def">默认</span></div>
             <div class="tip-amount">¥99.07</div>
             <div>充值 ¥99.07 · 赠金 ¥0.00</div>
             <div>接口状态：可用</div>
             <div class="tip-dim">更新于 16:22:05 · 每 10 分钟自动刷新</div>
-            <div class="tip-dim">悬停即刷新 · 单击强制刷新 · 拖动可移动</div>
+            <div class="tip-dim">左右箭头切换 Key · 单击刷新 · 拖动移动</div>
           </div>
         </span>
-        <span class="label">① 正常（≥ 10 元）· 绿色 + 悬停提示</span>
+        <span class="label">① 正常（≥ 10 元）· 绿色 + 悬停提示（多 Key 时带箭头和 Key 名）</span>
       </div>
     </div>
 
-    <div class="row" style="margin-top:64px;">
+    <div class="row" style="margin-top:26px;">
       <div class="case">
         <span class="wrap">
           <span class="whale"><img src="assets/whale.svg" alt=""></span>
+          <button class="nav" type="button">‹</button>
           <span class="pill low">6.80</span>
+          <button class="nav" type="button">›</button>
+          <span class="key-tag">个人号</span>
         </span>
         <span class="label">② 余额低于 10 元 · 变红</span>
       </div>
       <div class="case">
         <span class="wrap">
           <span class="whale"><img src="assets/whale.svg" alt=""></span>
+          <button class="nav" type="button">‹</button>
           <span class="pill err">!</span>
+          <button class="nav" type="button">›</button>
+          <span class="key-tag">测试号</span>
         </span>
-        <span class="label">③ 请求失败（Key 错误 / 断网）</span>
+        <span class="label">③ 该 Key 请求失败（Key 错误 / 断网）</span>
       </div>
       <div class="case">
         <span class="wrap">
           <span class="whale"><img src="assets/whale.svg" alt=""></span>
           <span class="pill loading">···</span>
         </span>
-        <span class="label">④ 首次加载中</span>
+        <span class="label">④ 首次加载中 / 只有一个 Key（不显示箭头）</span>
       </div>
     </div>
+  </div>
+
+  <h2 style="text-transform:none;">多 Key 配置与切换</h2>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>操作</th><th>行为</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>弹窗「设置」→ 添加 Key</td><td>可以配置多个 Key（最多 8 个），每个都能写备注名，方便区分账号</td></tr>
+        <tr><td>点某个 Key 的「默认」</td><td>设为默认 Key：工具栏角标固定显示它，新页面角标也从它开始</td></tr>
+        <tr><td>角标上的 ‹ › 箭头</td><td>循环切换到上一个 / 下一个 Key，只影响当前页面，不会改默认 Key</td></tr>
+        <tr><td>弹窗上方的 Key 标签</td><td>直接点某个 Key 查看它的余额，标签上还带各自的余额（★ = 默认）</td></tr>
+        <tr><td>接口请求</td><td>每个 Key 独立请求、独立容错；某个 Key 失效只影响它自己</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <h2>浏览器工具栏图标</h2>
@@ -198,7 +259,7 @@
         <span class="tb-btn"><img src="assets/whale.svg" alt=""><span class="badge low">6.8</span></span>
         <span class="tb-btn"><img src="assets/whale.svg" alt=""><span class="badge err">!</span></span>
       </div>
-      <span class="muted">黑色虎鲸图标 + 实时金额角标（绿 / 红 / 灰）。在任何页面都能看到，包括内容脚本无法注入的页面。</span>
+      <span class="muted">黑色虎鲸图标 + 实时金额角标（绿 / 红 / 灰），固定显示「默认 Key」。在任何页面都能看到，包括内容脚本无法注入的页面。</span>
     </div>
   </div>
 
@@ -209,10 +270,11 @@
         <tr><th>触发方式</th><th>行为</th></tr>
       </thead>
       <tbody>
-        <tr><td>定时器</td><td>每 10 分钟自动请求一次（<code>chrome.alarms</code>，浏览器后台也在跑）</td></tr>
+        <tr><td>定时器</td><td>每 10 分钟给每个 Key 各请求一次（<code>chrome.alarms</code>，浏览器后台也在跑）</td></tr>
         <tr><td>鼠标悬停角标</td><td>立即请求一次，30 秒节流，防止来回划过时狂刷接口</td></tr>
         <tr><td>窗口 / 标签页重新聚焦</td><td>切回该页面时立即请求一次</td></tr>
         <tr><td>单击角标</td><td>强制刷新一次（不受节流限制）</td></tr>
+        <tr><td>‹ › 箭头</td><td>切换当前页面显示哪个 Key（循环），不会触发拖动或刷新</td></tr>
         <tr><td>拖动角标</td><td>移动到任意位置，位置本地记忆</td></tr>
         <tr><td>双击角标</td><td>隐藏角标（可在弹窗里重新打开）</td></tr>
       </tbody>
