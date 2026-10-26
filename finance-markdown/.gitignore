@@ -1,5 +1,0 @@
-__pycache__/
-*.pyc
-.agents/skills/cn-index-fund-analysis-files/imports/pending/*.tmp
-.agents/skills/cn-index-fund-analysis-files/imports/pending/*.csv
-.agents/skills/cn-index-fund-analysis-files/imports/pending/*.json
