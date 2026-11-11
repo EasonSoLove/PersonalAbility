@@ -3,3 +3,12 @@
 
 # IDE
 .idea/
+
+# 知乎网页快照（9.9MB 的 js/图片附件，正文已提取到 zhihu-article-raw.txt）
+*_files/
+*知乎.html
+
+# Python
+__pycache__/
+*.pyc
+

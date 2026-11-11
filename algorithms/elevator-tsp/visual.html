@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>带释放时间的一维 TSP · 动态图解</title>
+<style>
+:root{
+  --bg:#0b1017; --panel:#111a26; --panel2:#0e1621; --line:#1f2d3f;
+  --ink:#e7eef8; --dim:#8aa0b8; --dim2:#5d7186;
+  --red:#f87171; --blue:#60a5fa; --green:#4ade80; --amber:#fbbf24; --purple:#a78bfa;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Cascadia Code",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:radial-gradient(1200px 600px at 15% -10%,#16233a 0%,transparent 60%),var(--bg);
+  color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  line-height:1.65; min-height:100vh;
+}
+header{padding:30px 32px 18px;max-width:1240px;margin:0 auto}
+h1{margin:0 0 6px;font-size:25px;letter-spacing:.3px}
+h1 .accent{color:var(--green)}
+.sub{margin:0;color:var(--dim);font-size:14px}
+nav.tabs{max-width:1240px;margin:0 auto;padding:0 32px;display:flex;gap:10px;flex-wrap:wrap}
+nav.tabs button{
+  background:var(--panel);border:1px solid var(--line);color:var(--dim);
+  padding:10px 18px;border-radius:10px 10px 0 0;cursor:pointer;font-size:14px;
+  font-family:inherit;transition:.18s;border-bottom:none;
+}
+nav.tabs button:hover{color:var(--ink);border-color:#2c4058}
+nav.tabs button.active{background:var(--panel2);color:var(--ink);border-color:#33506e;box-shadow:inset 0 2px 0 var(--green)}
+main{max-width:1240px;margin:0 auto;padding:0 32px 64px}
+.view{display:none;background:var(--panel2);border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:26px 28px}
+.view.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h2{font-size:17px;margin:0 0 4px;font-weight:600}
+h2 .num{color:var(--green);font-family:var(--mono);margin-right:8px}
+.lead{color:var(--dim);font-size:13.5px;margin:0 0 18px}
+.lead b{color:var(--ink);font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button.btn{
+  background:#17293c;border:1px solid #2b4258;color:var(--ink);
+  padding:8px 15px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;transition:.15s;
+}
+button.btn:hover{background:#1e3852;border-color:#3d5c7a}
+button.btn.primary{background:#14432c;border-color:#2c7a4b;color:#b9f5cf}
+button.btn.primary:hover{background:#1a5537}
+button.btn.ghost{background:transparent}
+button.btn:disabled{opacity:.4;cursor:not-allowed}
+.tag{font-family:var(--mono);font-size:11.5px;padding:2px 8px;border-radius:5px;border:1px solid}
+.tag.red{color:var(--red);border-color:#5e2b2b;background:#2a1618}
+.tag.blue{color:var(--blue);border-color:#26405e;background:#131f2e}
+.tag.green{color:var(--green);border-color:#255c3c;background:#10251a}
+.tag.amber{color:var(--amber);border-color:#5c4a1c;background:#241d0e}
+.hint{color:var(--dim2);font-size:12.5px}
+
+/* ---------- 全局记号说明 ---------- */
+.nota{max-width:1240px;margin:14px auto 0;padding:11px 18px;display:flex;gap:22px;flex-wrap:wrap;
+      align-items:center;background:#0e1621;border:1px solid var(--line);border-radius:10px;
+      font-size:12.5px;color:var(--dim)}
+.nota .chip{display:inline-flex;align-items:center;gap:7px}
+.nota .badge{display:inline-block;min-width:22px;height:22px;line-height:22px;text-align:center;
+      border-radius:6px;font-family:var(--mono);font-size:12px;font-weight:700;padding:0 5px}
+.nota .badge.p{background:#12314d;color:#7dd3fc;border:1px solid #245070}
+.nota .badge.a{background:#3a2c0d;color:#fbbf24;border:1px solid #6b5518}
+.nota .badge.eq{background:#1a2a1f;color:#86efac;border:1px solid #2c6b45}
+.nota code{font-family:var(--mono);color:var(--ink);background:#16232f;padding:1px 6px;border-radius:4px}
+.nota .sep{flex:1}
+
+/* ---------- 图 1：卡点扫描 ---------- */
+.chart{margin:8px 0 4px}
+.chart-head{display:flex;gap:12px;align-items:center;margin:0 0 6px 2px;flex-wrap:wrap}
+.cols{display:flex;gap:0;align-items:flex-end;border-bottom:1px solid transparent}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;position:relative;border-radius:8px;padding:4px 0;transition:background .25s}
+.col.active{background:#16243a}
+.col.stuck{background:linear-gradient(180deg,rgba(248,113,113,.07),rgba(248,113,113,.02));box-shadow:inset 0 0 0 1px rgba(248,113,113,.18)}
+.col.stuck.blue-on{background:linear-gradient(180deg,rgba(96,165,250,.09),rgba(96,165,250,.02));box-shadow:inset 0 0 0 1px rgba(96,165,250,.22)}
+.plot{position:relative;width:100%;}
+.zero{position:absolute;left:8%;right:8%;top:50%;border-top:1px dashed #24405c}
+.bar{position:absolute;left:50%;transform:translateX(-50%);width:min(26px,62%);border-radius:4px 4px 0 0;
+     height:0;transition:height .42s cubic-bezier(.22,1.2,.36,1)}
+.bar.down{border-radius:0 0 4px 4px}
+.bar.red{background:linear-gradient(180deg,#f87171,#b93a3a);box-shadow:0 0 14px rgba(248,113,113,.28)}
+.bar.blue{background:linear-gradient(180deg,#60a5fa,#2f6fb5);box-shadow:0 0 14px rgba(96,165,250,.28)}
+.bar.down.red{background:linear-gradient(0deg,#f87171,#b93a3a)}
+.bar.down.blue{background:linear-gradient(0deg,#60a5fa,#2f6fb5)}
+.val{position:absolute;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:11.5px;
+     color:var(--ink);font-weight:600;background:#0d1621;border:1px solid var(--line);
+     border-radius:5px;padding:0 6px;opacity:0;white-space:nowrap;z-index:3}
+.val.show{opacity:1}
+.foot{margin-top:8px;text-align:center;line-height:1.35}
+.foot b{display:block;font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+.foot span{font-family:var(--mono);font-size:11px;color:var(--dim2)}
+.flag{margin-top:5px;height:20px;font-size:12px;font-weight:700;opacity:0;transform:scale(.4);
+      transition:all .32s cubic-bezier(.2,1.6,.4,1)}
+.flag.red{color:var(--red)}
+.flag.blue{color:var(--blue)}
+.flag.show{opacity:1;transform:scale(1)}
+.verdict{margin-top:16px;font-size:13.5px;color:var(--dim);min-height:52px}
+.verdict b{color:var(--ink)}
+.verdict code{font-family:var(--mono);color:var(--amber);font-size:12.5px}
+
+/* ---------- 图 2：车 ---------- */
+canvas{display:block;width:100%;border-radius:10px;background:linear-gradient(180deg,#0c1420,#0a111a)}
+.hud{display:flex;gap:22px;flex-wrap:wrap;margin:12px 0 0;padding:12px 16px;background:var(--panel);
+     border:1px solid var(--line);border-radius:10px}
+.hud .kpi{min-width:112px}
+.hud .kpi .k{font-size:11.5px;color:var(--dim2);letter-spacing:.4px}
+.hud .kpi .v{font-family:var(--mono);font-size:19px;color:var(--ink)}
+.hud .kpi .v.green{color:var(--green)}
+.hud .kpi .v.amber{color:var(--amber)}
+
+/* ---------- 图 3 ---------- */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:900px){.split{grid-template-columns:1fr}}
+.metric{font-family:var(--mono);font-size:26px;color:var(--ink)}
+.metric.small{font-size:17px}
+input[type=range]{width:100%;accent-color:#4ade80;background:transparent}
+.barcmp{margin-top:12px}
+.barcmp .line{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:12.5px}
+.barcmp .lab{width:120px;color:var(--dim);flex:none}
+.barcmp .track{flex:1;display:block;height:16px;background:#0d1621;border-radius:4px;overflow:hidden}
+.barcmp .fill{display:block;height:100%;width:0;border-radius:4px;transition:width .5s cubic-bezier(.22,1,.36,1)}
+.barcmp .fill.red{background:linear-gradient(90deg,#b93a3a,#f87171)}
+.barcmp .fill.green{background:linear-gradient(90deg,#1f7a4a,#4ade80)}
+.barcmp .num{width:96px;text-align:right;font-family:var(--mono);color:var(--ink);flex:none}
+.note{font-size:12px;color:var(--dim2);margin-top:8px}
+
+/* ---------- x′ 交互演示 ---------- */
+.xo-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.xo-chip{font-family:var(--mono);font-size:11px;padding:4px 8px;border-radius:6px;
+  border:1px solid var(--line);background:#0e1621;color:var(--dim);
+  display:flex;flex-direction:column;align-items:center;line-height:1.35;min-width:54px;
+  transition:all .22s}
+.xo-chip b{color:var(--ink);font-size:11.5px}
+.xo-chip .a{font-size:10.5px;opacity:.85}
+.xo-chip em{font-style:normal;font-weight:700;color:#fbbf24;display:block;font-size:10px}
+.xo-chip.cur{border-color:#7dd3fc;background:#0f2233;box-shadow:0 0 0 2px rgba(125,211,252,.2)}
+.xo-chip.done{opacity:.35}
+.xo-chip.safe{border-color:#2c6b45;background:#0f2118;color:#86efac}
+.xo-chip.safe b{color:#86efac}
+.xo-chip.edge{border-color:#fbbf24;background:#241d0e;color:#fbbf24;transform:translateY(-4px);
+  box-shadow:0 0 0 2px rgba(251,191,36,.22)}
+.xo-chip.edge b{color:#fbbf24}
+.xo-chip.risk{border-color:#5e2b2b;background:#241314;color:#f87171}
+.xo-chip.risk b{color:#f87171}
+.xo-chip.impossible{opacity:.28;text-decoration:line-through}
+kbd{background:#1b2a3c;border:1px solid #2c4258;border-bottom-width:2px;border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:11.5px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>带释放时间的<span class="accent">一维 TSP</span> · 动态图解</h1>
+  <p class="sub">从 O(n²) DP 到 O(n log n)：作者把「大部分状态没用」这句话，从直觉变成了数学证明</p>
+</header>
+
+<nav class="tabs">
+  <button data-view="scan" class="active">① 卡点是怎么找出来的</button>
+  <button data-view="bus">② 车在路上（最优路线）</button>
+  <button data-view="state">③ 状态塌缩 · 裂项相消</button>
+</nav>
+
+<div class="nota">
+  <span class="chip"><span class="badge p">P</span><span><b style="color:#7dd3fc">Position · 位置</b> —— 第几层楼（路上的坐标）</span></span>
+  <span class="chip"><span class="badge a">A</span><span><b style="color:#fbbf24">Arrival · 到达时间</b> —— 这个人第几秒才出现、开始等车</span></span>
+  <span class="chip"><span class="badge eq">例</span><span><code>P=6, A=100</code> = 6 楼那个人，第 100 秒才来</span></span>
+  <span class="sep"></span>
+  <span class="chip hint">LeetCode 写作 <code>requests[i] = [A, P]</code>（先时间后楼层）</span>
+</div>
+
+<main>
+
+<!-- ================= 视图 1 ================= -->
+<section id="view-scan" class="view active">
+  <h2><span class="num">01</span>抹掉不重要的点：卡点扫描</h2>
+  <p class="lead">
+    同一个位置只保留<b>最晚到</b>的那个人。然后把位置从左到右排好，算两个数：
+    <b>A − P</b>（车从原点开过来最早几点到）和 <b>A + P</b>。
+    哪一家的「严格前缀最大值」出现，那个人就一定会把车<b>卡住</b>：车到了他还没来，必须等。
+  </p>
+
+  <div class="row" style="margin-bottom:14px">
+    <button class="btn primary" id="scanReplay">重播扫描</button>
+    <span class="hint">示例：start = 5，请求 (P=0, A=0) (P=4, A=10) (P=6, A=100) (P=9, A=2)</span>
+  </div>
+
+  <div class="chart" id="chartL"></div>
+  <div class="chart" id="chartR" style="margin-top:18px"></div>
+
+  <div class="verdict" id="verdict"></div>
+</section>
+
+<!-- ================= 视图 2 ================= -->
+<section id="view-bus" class="view">
+  <h2><span class="num">02</span>车真的跑起来：最优路线与等待</h2>
+  <p class="lead">
+    这里跑的是<b>精确解</b>（对状态 (已接集合, 位置) 做 Dijkstra 枚举）。
+    黄色 = 人已到、在路边等；绿色 = 已上车；灰色虚线 = 还没到。车在<b>卡点</b>上停下来等，
+    这段时间被高亮成琥珀色。
+  </p>
+
+  <div class="row" style="margin-bottom:12px">
+    <button class="btn primary" id="busPlay">▶ 播放</button>
+    <button class="btn" id="busReset">重置</button>
+    <span class="hint">速度</span>
+    <input type="range" id="busSpeed" min="1" max="10" step="1" value="3" style="width:130px">
+    <span class="hint" id="busSpeedVal">3×</span>
+    <span style="flex:1"></span>
+    <button class="btn ghost" data-preset="0">示例 A</button>
+    <button class="btn ghost" data-preset="1">示例 B</button>
+    <button class="btn ghost" data-preset="2">示例 C</button>
+    <button class="btn ghost" data-preset="3">随机</button>
+  </div>
+
+  <canvas id="busCanvas" style="height:330px"></canvas>
+  <div class="hint" id="busRoute" style="margin-top:10px;font-family:var(--mono)"></div>
+
+  <div class="hud">
+    <div class="kpi"><div class="k">当前时刻</div><div class="v" id="hudTime">0</div></div>
+    <div class="kpi"><div class="k">最优耗时</div><div class="v green" id="hudAns">–</div></div>
+    <div class="kpi"><div class="k">已接 / 总数</div><div class="v" id="hudServed">0 / 0</div></div>
+    <div class="kpi"><div class="k">车在干嘛</div><div class="v small amber" id="hudState" style="font-size:15px">待命</div></div>
+    <div class="kpi" style="flex:1;min-width:200px"><div class="k">说明</div><div class="hint" id="hudNote">点「播放」开始</div></div>
+  </div>
+</section>
+
+<!-- ================= 视图 3 ================= -->
+<section id="view-state" class="view">
+  <h2><span class="num">03</span>状态塌缩：为什么 110 个格子只剩 23 个</h2>
+  <p class="lead">
+    左侧卡点有 |L| 个、右侧卡点有 |R| 个，原来的状态数是 <b>|L| × |R|</b>（灰色方格）。
+    作者发现每个 x 只可能展开出 <b>(x+1)′ − x′ + 2</b> 个新状态，而所有的 x 加起来<b>裂项相消</b>，
+    总和只取决于「最后一个 x′」减「第一个 x′」—— 也就是 O(n)。
+  </p>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <b style="font-size:14px">x′ 是什么？—— 一条「安全线」</b>
+      <span class="tag amber" id="xoTag">x′ = 1</span>
+    </div>
+    <div class="note" style="margin-top:6px">
+      <b style="color:#7dd3fc">x′</b> = 右侧卡点里，<b>第一个「到达时间比 A<sub>x</sub> 更晚」</b>的那个的下标。
+      它是一条分界线：在它左边的右侧卡点（更靠外、来得更早），车跑过去接上再折返，<b>全程不用等</b>。
+    </div>
+    <div style="margin-top:12px">
+      <div class="hint" style="margin-bottom:2px">左侧卡点 · x 从小往大（A 一定严格递增）</div>
+      <div class="xo-chips" id="xoL"></div>
+    </div>
+    <div style="margin-top:4px">
+      <div class="hint" style="margin-bottom:2px">右侧卡点 · y 从右往左编号（y 越大 = 越靠近中间）</div>
+      <div class="xo-chips" id="xoR"></div>
+    </div>
+    <div class="row" style="margin-top:10px;gap:14px">
+      <span class="hint">拖动切换 x</span>
+      <input type="range" id="xoSlider" min="0" max="9" step="1" value="0" style="max-width:340px">
+    </div>
+    <div class="verdict" id="xoExplain" style="margin-top:4px;min-height:auto"></div>
+  </div>
+
+  <div class="split">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <b style="font-size:14px">对侧卡点 x′ 的阶梯</b>
+        <span class="tag amber" id="stepSum">Σ 跳变 = 0</span>
+      </div>
+      <canvas id="stepCanvas" style="height:260px;margin-top:10px"></canvas>
+      <div class="note" id="stepNote"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" id="stepPlay">重播计数</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <b style="font-size:14px">全状态 vs 实际状态</b>
+        <span class="tag green" id="ratioTag">—</span>
+      </div>
+      <div class="barcmp">
+        <div class="line">
+          <span class="lab">|L| × |R|（全状态）</span>
+          <span class="track"><span class="fill red" id="barFull"></span></span>
+          <span class="num" id="numFull">0</span>
+        </div>
+        <div class="line">
+          <span class="lab">≈ 2.25 × n（实测）</span>
+          <span class="track"><span class="fill green" id="barReal"></span></span>
+          <span class="num" id="numReal">0</span>
+        </div>
+      </div>
+      <div style="margin-top:18px">
+        <div class="row" style="justify-content:space-between">
+          <span class="hint">卡点规模 n = |L| + |R|</span>
+          <span class="metric" id="nVal" style="font-size:18px">40</span>
+        </div>
+        <input type="range" id="nSlider" min="20" max="2000" step="20" value="40">
+      </div>
+      <div class="note">
+        柱长用 <b>平方根缩放</b> 画（否则 O(n²) 会把 O(n) 压成一条线）。
+        真实倍率见右上角。实测数据来自仓库里的 <code>bench_output.txt</code>：
+        n=100000 时全状态是 2.5×10⁹，实际只访问了 <b>124,992</b> 个。
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <b style="font-size:14px">一句话记住这三步</b>
+    <div style="margin-top:8px;color:var(--dim);font-size:13.5px">
+      <b style="color:var(--red)">① 删点</b> — 不是卡点的位置，DP 走到它时人一定已经到了，顺路就上车，不用为它做决策。<br>
+      <b style="color:var(--blue)">② 合并卡住</b> — 都卡在同一个点等，等完的时刻都是 A<sub>x</sub>，那么 y 越大的越优，只留一个。<br>
+      <b style="color:var(--green)">③ 折叠对端</b> — y 还没到「对侧卡点」时，去一趟再折返全程不卡，一整段 y 合并成同一个状态。<br>
+      剩下的 <b>裂项相消</b> 让总状态数塌到 O(n)，再用优先队列 Dijkstra 跑，就是 O(n log n)。
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* =====================================================================
+   公共工具
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+
+/** 按位置去重（保留最晚到达），并求左右卡点序列 */
+function buildStuck(reqs) {
+  const map = new Map();
+  for (const r of reqs) map.set(r.p, Math.max(map.get(r.p) ?? -1e9, r.a));
+  const sorted = [...map.entries()].map(([p, a]) => ({ p, a })).sort((x, y) => x.p - y.p);
+  if (!sorted.length) return { sorted, L: [], R: [] };
+
+  const L = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const cur = sorted[i], last = L[L.length - 1];
+    if (cur.a - cur.p > last.a - last.p) L.push(cur);   // A-P 严格变大
+  }
+  const R = [sorted[sorted.length - 1]];
+  for (let i = sorted.length - 2; i >= 0; i--) {
+    const cur = sorted[i], last = R[R.length - 1];
+    if (cur.a + cur.p > last.a + last.p) R.push(cur);   // A+P 严格变大
+  }
+  return { sorted, L, R };
+}
+
+/** 对侧卡点：x'(i) = min j 使 R[j].A > L[i].A */
+function computeOpposite(L, R) {
+  const xs = [];
+  let j = 0;
+  for (const l of L) {
+    while (j < R.length && R[j].a <= l.a) j++;
+    xs.push(j);
+  }
+  return xs;
+}
+
+/* =====================================================================
+   视图 1：卡点扫描
+   ===================================================================== */
+function buildChart(root, items, tone, caption, sub) {
+  root.innerHTML = '';
+  const head = document.createElement('div');
+  head.className = 'chart-head';
+  head.innerHTML = `<span class="tag ${tone}">${caption}</span><span class="hint">${sub}</span>`;
+  root.appendChild(head);
+
+  const row = document.createElement('div');
+  row.className = 'cols';
+  const H = 190;
+  const maxAbs = Math.max(1, ...items.map(i => Math.abs(i.v)));
+  const cols = [];
+
+  items.forEach((it) => {
+    const col = document.createElement('div');
+    col.className = 'col';
+
+    const plot = document.createElement('div');
+    plot.className = 'plot';
+    plot.style.height = H + 'px';
+
+    const zero = document.createElement('div');
+    zero.className = 'zero';
+    plot.appendChild(zero);
+
+    // 用平方根压缩：否则一个特别大的值会把其它柱子全压成一条线
+    const h = Math.max(3, Math.sqrt(Math.abs(it.v) / maxAbs) * (H * 0.40));
+    const bar = document.createElement('div');
+    bar.className = 'bar ' + tone + (it.v >= 0 ? ' up' : ' down');
+    bar.style.height = '0px';
+    if (it.v >= 0) bar.style.bottom = '50%'; else bar.style.top = '50%';
+    plot.appendChild(bar);
+
+    const val = document.createElement('div');
+    val.className = 'val';
+    if (it.v >= 0) val.style.bottom = 'calc(50% + ' + h + 'px + 7px)';
+    else val.style.top = 'calc(50% + ' + h + 'px + 7px)';
+    val.textContent = (it.v > 0 ? '+' : '') + it.v;
+    plot.appendChild(val);
+
+    const foot = document.createElement('div');
+    foot.className = 'foot';
+    foot.innerHTML = '<b>P=' + it.p + '</b><span>A=' + it.a + '</span>';
+    const flag = document.createElement('div');
+    flag.className = 'flag ' + tone;
+
+    col.appendChild(plot); col.appendChild(foot); col.appendChild(flag);
+    row.appendChild(col);
+    cols.push({ col, bar, val, flag, h, it });
+  });
+
+  root.appendChild(row);
+  return cols;
+}
+
+function activateCol(c, tone) {
+  c.col.classList.add('active');
+  c.bar.style.height = c.h + 'px';
+  c.val.classList.add('show');
+  c.val.style.opacity = '1';
+  if (c.it.stuck) {
+    setTimeout(() => {
+      c.flag.textContent = tone === 'red' ? '卡!' : '卡!';
+      c.flag.classList.add('show');
+      c.flag.style.opacity = '1';
+      c.flag.style.transform = 'scale(1)';
+      c.col.classList.add('stuck');
+      if (tone === 'blue') c.col.classList.add('blue-on');
+    }, 240);
+  }
+  setTimeout(() => c.col.classList.remove('active'), 300);
+}
+
+let scanTimers = [];
+function initScan() {
+  scanTimers.forEach(clearTimeout);
+  scanTimers = [];
+
+  const reqs = [{ p: 0, a: 0 }, { p: 4, a: 10 }, { p: 6, a: 100 }, { p: 9, a: 2 }];
+  const { sorted, L, R } = buildStuck(reqs);
+  const isL = new Set(L.map(o => o.p));
+  const isR = new Set(R.map(o => o.p));
+
+  const leftItems = sorted.map(o => ({ p: o.p, a: o.a, v: o.a - o.p, stuck: isL.has(o.p) }));
+  const rightItems = sorted.map(o => ({ p: o.p, a: o.a, v: o.a + o.p, stuck: isR.has(o.p) }));
+
+  const cL = buildChart($('#chartL'), leftItems, 'red', 'A − P', '从左往右扫：出现新的严格最大值 → 左侧卡点（柱高按 √ 压缩）');
+  const cR = buildChart($('#chartR'), rightItems, 'blue', 'A + P', '从右往左扫：出现新的严格最大值 → 右侧卡点（柱高按 √ 压缩）');
+
+  const STEP = 300;
+  // 左：正序
+  leftItems.forEach((_, i) => {
+    scanTimers.push(setTimeout(() => activateCol(cL[i], 'red'), 200 + i * STEP));
+  });
+  const t0 = 200 + leftItems.length * STEP + 500;
+  // 右：倒序（从右往左扫）
+  rightItems.forEach((_, i) => {
+    const idx = rightItems.length - 1 - i;
+    scanTimers.push(setTimeout(() => activateCol(cR[idx], 'blue'), t0 + i * STEP));
+  });
+
+  const done = t0 + rightItems.length * STEP + 300;
+  scanTimers.push(setTimeout(() => {
+    $('#verdict').innerHTML =
+      '<b>左侧卡点</b> L = <code>[' + L.map(o => 'P' + o.p).join(', ') + ']</code>　（A−P = ' +
+      L.map(o => o.a - o.p).join(', ') + '）<br>' +
+      '<b>右侧卡点</b> R = <code>[' + R.map(o => 'P' + o.p).join(', ') + ']</code>　（A+P = ' +
+      R.map(o => o.a + o.p).join(', ') + '）<br>' +
+      '既不在 L 也不在 R 里的点 → <b>直接删掉，答案不变</b>。这里 4 个点全留下来了，' +
+      '但最坏情况才是 O(n)；这步的意义是<b>把问题整理成「单峰」形状</b>，方便后面折叠。';
+  }, done));
+}
+
+$('#scanReplay').addEventListener('click', initScan);
+
+/* =====================================================================
+   视图 2：精确解 + 动画
+   ===================================================================== */
+/** 精确解：枚举 (已接集合, 位置) 的 Dijkstra，返回 legs / 总时间 / 请求服务时刻 */
+function solveExact(start, rawReqs) {
+  const map = new Map();
+  for (const r of rawReqs) map.set(r.p, Math.max(map.get(r.p) ?? -1e9, r.a));
+  const reqs = [...map.entries()].map(([p, a]) => ({ p, a }));
+  const positions = [...new Set([...reqs.map(r => r.p), start])].sort((a, b) => a - b);
+  const m = positions.length;
+  const posIdx = new Map(positions.map((p, i) => [p, i]));
+  const items = reqs.map(r => ({ a: r.a, pi: posIdx.get(r.p) }));
+  const k = items.length, full = (1 << k) - 1;
+
+  const byPos = Array.from({ length: m }, () => []);
+  items.forEach((it, i) => byPos[it.pi].push({ a: it.a, i }));
+
+  // 段内「顺带服务」表
+  const segs = Array.from({ length: m }, () => Array(m).fill(null));
+  for (let p = 0; p < m; p++) for (let q = 0; q < m; q++) {
+    if (p === q) continue;
+    const lo = Math.min(p, q), hi = Math.max(p, q), arr = [];
+    for (let r = lo + 1; r <= hi; r++) arr.push([Math.abs(positions[r] - positions[p]), byPos[r]]);
+    segs[p][q] = arr;
+  }
+
+  const key = (mask, p) => mask * m + p;
+  const dist = new Map(), prev = new Map();
+  const pq = [];
+  const sp = posIdx.get(start) ?? 0;
+  dist.set(key(0, sp), 0);
+  pq.push({ d: 0, mask: 0, p: sp });
+
+  let bestD = Infinity, bestMask = -1, bestP = -1;
+
+  while (pq.length) {
+    let bi = 0;
+    for (let i = 1; i < pq.length; i++) if (pq[i].d < pq[bi].d) bi = i;
+    const cur = pq.splice(bi, 1)[0];
+    const ck = key(cur.mask, cur.p);
+    if ((dist.get(ck) ?? Infinity) < cur.d) continue;
+    if (cur.mask === full) { if (cur.d < bestD) { bestD = cur.d; bestMask = cur.mask; bestP = cur.p; } continue; }
+    if (cur.d >= bestD) continue;
+
+    // 动作 1：停在原地等人
+    for (const { a, i } of byPos[cur.p]) {
+      if ((cur.mask >> i) & 1) continue;
+      const nt = Math.max(cur.d, a), nm = cur.mask | (1 << i), nk = key(nm, cur.p);
+      if (nt < (dist.get(nk) ?? Infinity)) {
+        dist.set(nk, nt); prev.set(nk, { mask: cur.mask, p: cur.p }); pq.push({ d: nt, mask: nm, p: cur.p });
+      }
+    }
+    // 动作 2：开到别的位置
+    for (let q = 0; q < m; q++) {
+      if (q === cur.p) continue;
+      const arr = cur.d + Math.abs(positions[q] - positions[cur.p]);
+      let nm = cur.mask;
+      for (const [off, lst] of segs[cur.p][q]) {
+        const reach = cur.d + off;
+        for (const { a, i } of lst) if (!((cur.mask >> i) & 1) && a <= reach) nm |= 1 << i;
+      }
+      const nk = key(nm, q);
+      if (arr < (dist.get(nk) ?? Infinity)) {
+        dist.set(nk, arr); prev.set(nk, { mask: cur.mask, p: cur.p }); pq.push({ d: arr, mask: nm, p: q });
+      }
+    }
+  }
+
+  if (bestMask < 0) return null;
+
+  // 回溯
+  const pathStates = [];
+  let ck = key(bestMask, bestP), guard = 0;
+  while (guard++ < 5000) {
+    const mask = Math.floor(ck / m), p = ck % m;
+    pathStates.push({ mask, p, t: dist.get(ck) });
+    const pv = prev.get(ck);
+    if (!pv) break;
+    ck = key(pv.mask, pv.p);
+  }
+  pathStates.reverse();
+
+  const legs = [];
+  for (let i = 1; i < pathStates.length; i++) {
+    const s1 = pathStates[i - 1], s2 = pathStates[i];
+    if (s1.p === s2.p) legs.push({ type: 'wait', pi: s1.p, t0: s1.t, t1: s2.t });
+    else legs.push({ type: 'move', from: s1.p, to: s2.p, t0: s1.t, t1: s2.t });
+  }
+
+  // 每个请求的服务时刻
+  const svc = items.map(() => Infinity);
+  for (const leg of legs) {
+    if (leg.type === 'wait') {
+      items.forEach((it, i) => {
+        if (it.pi !== leg.pi) return;
+        if (it.a <= leg.t1) svc[i] = Math.min(svc[i], Math.max(it.a, leg.t0));
+      });
+    } else {
+      const p1 = positions[leg.from], p2 = positions[leg.to];
+      const lo = Math.min(p1, p2), hi = Math.max(p1, p2);
+      items.forEach((it, i) => {
+        const x = positions[it.pi];
+        if (x < lo || x > hi) return;
+        const tp = leg.t0 + Math.abs(x - p1);
+        if (tp >= it.a) svc[i] = Math.min(svc[i], tp);
+      });
+    }
+  }
+
+  return { positions, legs, total: bestD, items, svc };
+}
+
+const PRESETS = [
+  { start: 5, reqs: [{ p: 0, a: 0 }, { p: 4, a: 10 }, { p: 6, a: 100 }, { p: 9, a: 2 }] },
+  { start: 0, reqs: [{ p: 0, a: 0 }, { p: 10, a: 0 }] },
+  { start: 5, reqs: [{ p: 0, a: 0 }, { p: 10, a: 5 }] },
+  { start: 7, reqs: null }
+];
+
+function randomCase() {
+  const reqs = [];
+  const used = new Set();
+  const n = 5;
+  while (reqs.length < n) {
+    const p = 1 + Math.floor(Math.random() * 18);
+    if (used.has(p)) continue;
+    used.add(p);
+    reqs.push({ p, a: Math.floor(Math.random() * 26) });
+  }
+  return { start: 1 + Math.floor(Math.random() * 18), reqs };
+}
+
+const bus = {
+  canvas: null, ctx: null, sol: null,
+  t: 0, playing: false, speed: 3, lastTs: 0, presetIdx: 0,
+  BASE_RATE: 11  // 1× 时每秒推进的仿真时间（已按反馈调慢一半，原 22）
+};
+
+function busLoad(preset) {
+  const p = preset || PRESETS[bus.presetIdx];
+  const data = p.reqs ? p : randomCase();
+  bus.sol = solveExact(data.start, data.reqs);
+  bus.t = 0;
+  bus.playing = false;
+  $('#busPlay').textContent = '▶ 播放';
+  $('#hudAns').textContent = bus.sol ? bus.sol.total : '–';
+
+  // 停靠序列：start → (每次移动的落点)
+  const seq = [data.start];
+  if (bus.sol) {
+    for (const leg of bus.sol.legs) {
+      if (leg.type === 'move') {
+        const v = bus.sol.positions[leg.to];
+        if (seq[seq.length - 1] !== v) seq.push(v);
+      }
+    }
+  }
+  $('#busRoute').innerHTML =
+    '停靠序列：<b style="color:#e7eef8">' + seq.join(' → ') + '</b>' +
+    '　（灰色虚线点未到达；黄色圈 = 人到了在等；绿勾 = 已上车；底部黄条 = 车在原地等人）';
+
+  busUpdateHud();
+  busDraw();
+}
+
+function busStateAt(t) {
+  const { legs, positions } = bus.sol;
+  if (!legs.length) return { p: positions[0], waiting: false, done: t > 0 };
+  for (const leg of legs) {
+    if (t <= leg.t1 + 1e-9) {
+      if (leg.type === 'wait') return { p: positions[leg.pi], waiting: true, leg };
+      const p1 = positions[leg.from], p2 = positions[leg.to];
+      const d = leg.t1 - leg.t0;
+      const f = d <= 1e-9 ? 1 : Math.max(0, Math.min(1, (t - leg.t0) / d));
+      return { p: p1 + (p2 - p1) * f, waiting: false, leg };
+    }
+  }
+  return { p: positions[legs[legs.length - 1].to], waiting: false, done: true };
+}
+
+function busServedCount(t) {
+  if (!bus.sol) return 0;
+  return bus.sol.svc.filter(s => t >= s - 1e-9).length;
+}
+
+function busUpdateHud() {
+  if (!bus.sol) return;
+  $('#hudTime').textContent = bus.t.toFixed(1);
+  const served = busServedCount(bus.t);
+  $('#hudServed').textContent = served + ' / ' + bus.sol.items.length;
+  const st = busStateAt(bus.t);
+  const el = $('#hudState');
+  if (st.done && bus.t > 0) { el.textContent = '完成 ✓'; el.style.color = 'var(--green)'; }
+  else if (bus.t === 0 && !bus.playing) { el.textContent = '待命'; el.style.color = 'var(--dim)'; }
+  else if (st.waiting) { el.textContent = '卡点上等待中'; el.style.color = 'var(--amber)'; }
+  else { el.textContent = '行驶中 →'; el.style.color = 'var(--blue)'; }
+}
+
+function busDraw() {
+  const cv = bus.canvas, ctx = bus.ctx;
+  if (!cv || !bus.sol) return;
+  const W = cv.clientWidth || 900, H = cv.clientHeight || 330;
+  const dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) {
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  const { positions, items, svc, total } = bus.sol;
+  const pad = 72;
+  const minP = Math.min(...positions), maxP = Math.max(...positions);
+  const spanP = Math.max(1, maxP - minP);
+  const X = p => positions.length === 1 && maxP === minP
+    ? W / 2
+    : pad + (p - minP) / spanP * (W - 2 * pad);
+
+  const roadY = H - 140;
+  const t = bus.t;
+  const st = busStateAt(t);
+
+  // ---- 地面标尺 ----
+  ctx.strokeStyle = '#22384f';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(pad - 26, roadY); ctx.lineTo(W - pad + 26, roadY); ctx.stroke();
+
+  // 每层的刻度（整数位置）
+  ctx.strokeStyle = '#16273a'; ctx.lineWidth = 1;
+  const lo = Math.min(...positions) - 1, hi = Math.max(...positions) + 1;
+  for (let p = lo; p <= hi; p++) {
+    const x = X(p);
+    ctx.beginPath(); ctx.moveTo(x, roadY); ctx.lineTo(x, roadY + 8); ctx.stroke();
+  }
+
+  // ---- 请求点 ----
+  items.forEach((it, i) => {
+    const pos = positions[it.pi];
+    const x = X(pos);
+    const arrived = t >= it.a - 1e-9;
+    const served = t >= svc[i] - 1e-9;
+
+    // 竖杆
+    ctx.strokeStyle = served ? '#2b6b45' : (arrived ? '#7a6526' : '#2b3d52');
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x, roadY); ctx.lineTo(x, roadY + 26); ctx.stroke();
+
+    // 圆点
+    const cy = roadY + 34;
+    const r = 11;
+    ctx.beginPath(); ctx.arc(x, cy, r, 0, Math.PI * 2);
+
+    if (served) {
+      ctx.fillStyle = '#14371f'; ctx.fill();
+      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.fillStyle = '#4ade80'; ctx.font = 'bold 13px ' + getComputedStyle(document.body).fontFamily;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('✓', x, cy + 0.5);
+    } else if (arrived) {
+      // 等待中：脉冲
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 260);
+      ctx.fillStyle = 'rgba(251,191,36,' + (0.18 + 0.22 * pulse) + ')'; ctx.fill();
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, cy, r + 4 + pulse * 3, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(251,191,36,' + (0.45 - 0.3 * pulse) + ')'; ctx.lineWidth = 1.5; ctx.stroke();
+    } else {
+      ctx.setLineDash([4, 4]);
+      ctx.fillStyle = '#0e1723'; ctx.fill();
+      ctx.strokeStyle = '#4a6076'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // 标签
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#8aa0b8';
+    ctx.font = '11.5px ' + getComputedStyle(document.body).fontFamily;
+    ctx.fillText('P=' + pos, x, cy + r + 8);
+    ctx.fillStyle = arrived ? '#c9a227' : '#4a6076';
+    ctx.font = '11px ' + getComputedStyle(document.body).fontFamily;
+    ctx.fillText('A=' + it.a, x, cy + r + 25);
+  });
+
+  // ---- 车 ----
+  const bx = X(st.p);
+  const busW = 62, busH = 32;
+  const by = roadY - busH - 8;
+
+  // 等待时的高亮光晕
+  if (st.waiting) {
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 240);
+    ctx.beginPath();
+    ctx.ellipse(bx, roadY - 6, busW * 0.8 + pulse * 14, 26 + pulse * 8, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(251,191,36,' + (0.06 + 0.07 * pulse) + ')';
+    ctx.fill();
+  }
+
+  // 车身
+  const grad = ctx.createLinearGradient(0, by, 0, by + busH);
+  if (st.waiting) { grad.addColorStop(0, '#fcd34d'); grad.addColorStop(1, '#b45309'); }
+  else { grad.addColorStop(0, '#7dd3fc'); grad.addColorStop(1, '#0e7490'); }
+  ctx.beginPath();
+  const rr = 7;
+  ctx.moveTo(bx - busW / 2 + rr, by);
+  ctx.lineTo(bx + busW / 2 - rr, by); ctx.quadraticCurveTo(bx + busW / 2, by, bx + busW / 2, by + rr);
+  ctx.lineTo(bx + busW / 2, by + busH - rr); ctx.quadraticCurveTo(bx + busW / 2, by + busH, bx + busW / 2 - rr, by + busH);
+  ctx.lineTo(bx - busW / 2 + rr, by + busH); ctx.quadraticCurveTo(bx - busW / 2, by + busH, bx - busW / 2, by + busH - rr);
+  ctx.lineTo(bx - busW / 2, by + rr); ctx.quadraticCurveTo(bx - busW / 2, by, bx - busW / 2 + rr, by);
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // 车窗
+  ctx.fillStyle = 'rgba(8,20,30,.55)';
+  for (let i = -1; i <= 1; i++) {
+    ctx.beginPath();
+    ctx.roundRect(bx + i * 18 - 6, by + 6, 12, 11, 3);
+    ctx.fill();
+  }
+  // 轮子
+  ctx.fillStyle = '#0b1017';
+  ctx.beginPath(); ctx.arc(bx - 18, by + busH, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(bx + 18, by + busH, 6, 0, Math.PI * 2); ctx.fill();
+
+  // 等待时的「+t」气泡
+  if (st.waiting) {
+    ctx.fillStyle = '#fbbf24';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.font = 'bold 12.5px ' + getComputedStyle(document.body).fontFamily;
+    ctx.fillText('等待中…', bx, by - 12);
+  }
+
+  // ---- 左上角时间 ----
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillStyle = '#5d7186';
+  ctx.font = '11.5px ' + getComputedStyle(document.body).fontFamily;
+  ctx.fillText('TIME', 22, 18);
+  ctx.fillStyle = '#e7eef8';
+  ctx.font = 'bold 34px ui-monospace,Consolas,monospace';
+  ctx.fillText(t.toFixed(1), 22, 32);
+
+  ctx.fillStyle = '#5d7186';
+  ctx.font = '11.5px ' + getComputedStyle(document.body).fontFamily;
+  ctx.fillText('/ 最优 ' + total, 22, 74);
+
+  // ---- 底部时间条 ----
+  const barX0 = pad, barX1 = W - pad;
+  const barY = H - 34;
+  const frac = total > 0 ? Math.min(1, t / total) : 0;
+  ctx.fillStyle = '#16273a';
+  ctx.beginPath(); ctx.roundRect(barX0, barY, barX1 - barX0, 5, 3); ctx.fill();
+  // 先画等待段（画在下面）
+  ctx.fillStyle = 'rgba(251,191,36,.30)';
+  for (const leg of bus.sol.legs) {
+    if (leg.type !== 'wait') continue;
+    const a = barX0 + (barX1 - barX0) * (leg.t0 / total);
+    const b = barX0 + (barX1 - barX0) * (leg.t1 / total);
+    ctx.beginPath(); ctx.roundRect(a, barY - 6, Math.max(2, b - a), 17, 3); ctx.fill();
+  }
+  // 再画已走过的进度
+  ctx.fillStyle = '#4ade80';
+  ctx.beginPath(); ctx.roundRect(barX0, barY, Math.max(0, (barX1 - barX0) * frac), 5, 3); ctx.fill();
+
+  // 播放头
+  const px = barX0 + (barX1 - barX0) * frac;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(px, barY + 2.5, 5, 0, Math.PI * 2); ctx.fill();
+
+  // 图例
+  ctx.font = '11px ' + getComputedStyle(document.body).fontFamily;
+  ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  const legend = [['#4a6076', '未到达'], ['#fbbf24', '已到·等待'], ['#4ade80', '已上车'], ['rgba(251,191,36,.85)', '等待段']];
+  let lx = W - 22;
+  for (let i = legend.length - 1; i >= 0; i--) {
+    ctx.fillStyle = legend[i][0];
+    ctx.beginPath(); ctx.arc(lx - 62, 22, 4.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8aa0b8';
+    ctx.fillText(legend[i][1], lx, 16);
+    lx -= 84;
+  }
+}
+
+function busLoop(ts) {
+  if (!bus.lastTs) bus.lastTs = ts;
+  const dt = Math.min(0.1, (ts - bus.lastTs) / 1000);
+  bus.lastTs = ts;
+
+  if (bus.playing && bus.sol) {
+    bus.t += dt * bus.BASE_RATE * bus.speed;
+    if (bus.t >= bus.sol.total) {
+      bus.t = bus.sol.total;
+      bus.playing = false;
+      $('#busPlay').textContent = '▶ 重播';
+      $('#hudNote').textContent = '全部接完，用时 ' + bus.sol.total;
+    }
+    busUpdateHud();
+  }
+  busDraw();
+  requestAnimationFrame(busLoop);
+}
+
+function initBus() {
+  bus.canvas = $('#busCanvas');
+  bus.ctx = bus.canvas.getContext('2d');
+  busLoad(PRESETS[0]);
+  requestAnimationFrame(busLoop);
+}
+
+$('#busPlay').addEventListener('click', () => {
+  if (!bus.sol) return;
+  if (bus.t >= bus.sol.total - 1e-9) bus.t = 0;
+  bus.playing = !bus.playing;
+  $('#busPlay').textContent = bus.playing ? '❚❚ 暂停' : '▶ 继续';
+  $('#hudNote').textContent = bus.playing ? '观察：车在哪些点停下等人' : '已暂停';
+});
+$('#busReset').addEventListener('click', () => {
+  bus.t = 0; bus.playing = false;
+  $('#busPlay').textContent = '▶ 播放';
+  $('#hudNote').textContent = '点「播放」开始';
+  busUpdateHud(); busDraw();
+});
+$('#busSpeed').addEventListener('input', e => {
+  bus.speed = +e.target.value;
+  $('#busSpeedVal').textContent = bus.speed + '×';
+});
+document.querySelectorAll('[data-preset]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const i = +btn.dataset.preset;
+    bus.presetIdx = i;
+    busLoad(PRESETS[i]);
+    $('#hudNote').textContent = '新样例，点「播放」开始';
+  });
+});
+
+/* =====================================================================
+   视图 3：裂项相消 + 规模对比
+   ===================================================================== */
+const stepCase = (() => {
+  // 构造一个 |L|=10, |R|=11 的单峰样例
+  const reqs = [];
+  for (let p = 0; p <= 9; p++) reqs.push({ p, a: 10 * p });
+  for (let p = 10; p <= 19; p++) reqs.push({ p, a: 5 * (19 - p) });
+  return reqs;
+})();
+
+const stepData = (() => {
+  const { L, R } = buildStuck(stepCase);
+  const xs = computeOpposite(L, R);
+  // 每个 x 展开的新状态数：(x+1)' - x'  (+2 常数项)
+  const widths = xs.map((v, i) => (i + 1 < xs.length ? xs[i + 1] : R.length) - v);
+  return { L, R, xs, widths };
+})();
+
+const step = { canvas: null, ctx: null, progress: 0, animating: false, timer: null };
+
+function stepDraw() {
+  const cv = step.canvas, ctx = step.ctx;
+  if (!cv) return;
+  const W = cv.clientWidth || 520, H = cv.clientHeight || 260;
+  const dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) {
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  const { xs, L, R } = stepData;
+  const padL = 44, padR = 20, padT = 18, padB = 38;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const maxX = xs.length;          // x = 0..k
+  const maxY = R.length;           // x' = 0..|R|
+  const X = x => padL + (maxX === 0 ? 0 : x / maxX * plotW);
+  const Y = y => padT + plotH - (maxY === 0 ? 0 : y / maxY * plotH);
+
+  // 网格
+  ctx.strokeStyle = '#16273a'; ctx.lineWidth = 1;
+  for (let i = 0; i <= maxY; i += Math.max(1, Math.ceil(maxY / 5))) {
+    const y = Y(i);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.fillStyle = '#4a6076'; ctx.font = '10.5px Consolas,monospace';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(i, padL - 8, y);
+  }
+  // 轴
+  ctx.strokeStyle = '#2b4258'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + plotH); ctx.lineTo(W - padR, padT + plotH); ctx.stroke();
+
+  ctx.fillStyle = '#5d7186'; ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('x′（对侧卡点下标）', 6, 2);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('x（左侧卡点下标）', padL + plotW / 2, padT + plotH + 16);
+
+  // 阶梯：x=0..k
+  const pts = [];
+  for (let i = 0; i < xs.length; i++) pts.push([i, xs[i]]);
+  pts.push([xs.length, R.length]);
+
+  const shown = step.progress; // 已经画到第几个「跳变」
+
+  // 折线（阶梯）
+  ctx.strokeStyle = '#3d5c7a'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  let started = false;
+  for (let i = 0; i < pts.length; i++) {
+    const [x, y] = pts[i];
+    if (!started) { ctx.moveTo(X(x), Y(y)); started = true; }
+    else { ctx.lineTo(X(x), Y(pts[i - 1][1])); ctx.lineTo(X(x), Y(y)); }
+  }
+  ctx.stroke();
+
+  // 逐段高亮
+  let acc = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const y0 = pts[i - 1][1], y1 = pts[i][1];
+    const dy = y1 - y0;
+    const done = (i - 1) < shown;
+    if (dy !== 0) {
+      acc += dy;
+      if (done) {
+        ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(X(i), Y(y0)); ctx.lineTo(X(i), Y(y1)); ctx.stroke();
+        ctx.fillStyle = '#4ade80';
+        ctx.beginPath(); ctx.arc(X(i), Y(y1), 4, 0, Math.PI * 2); ctx.fill();
+        ctx.font = 'bold 11px Consolas,monospace';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText('+' + dy, X(i) + 6, (Y(y0) + Y(y1)) / 2);
+      } else {
+        ctx.strokeStyle = '#243b52'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(X(i), Y(y0)); ctx.lineTo(X(i), Y(y1)); ctx.stroke();
+      }
+    }
+  }
+
+  // 累计值
+  let shownAcc = 0;
+  let cnt = 0;
+  for (let i = 1; i < pts.length && (i - 1) < shown; i++) { shownAcc += pts[i][1] - pts[i - 1][1]; cnt++; }
+
+  ctx.fillStyle = '#e7eef8';
+  ctx.font = 'bold 15px Consolas,monospace';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  ctx.fillText('Σ = ' + shownAcc, W - padR, 4);
+
+  $('#stepSum').textContent = 'Σ 跳变 = ' + shownAcc + ' / ' + (R.length - xs[0]);
+  $('#stepNote').innerHTML =
+    '|L| = ' + L.length + '，|R| = ' + R.length + '，原来要 <b style="color:#f87171">' +
+    (L.length * R.length) + '</b> 个状态格子；<br>' +
+    '阶梯上只有 <b style="color:#4ade80">' + pts.filter((p, i) => i > 0 && p[1] !== pts[i - 1][1]).length +
+    '</b> 次「竖跳」不为 0。所有竖跳加起来 = 最后高度 − 起始高度 = <b>' +
+    (R.length - xs[0]) + '</b>，而不是逐列累加。<br>' +
+    '这就是裂项相消：<b>Σ((x+1)′ − x′) = k′ − 0′</b>，是个 O(n) 的数。';
+}
+
+function stepPlay() {
+  const total = stepData.xs.length + 1; // 跳变次数
+  step.progress = 0;
+  if (step.timer) clearInterval(step.timer);
+  step.timer = setInterval(() => {
+    step.progress++;
+    stepDraw();
+    if (step.progress >= total) { clearInterval(step.timer); step.timer = null; }
+  }, 380);
+  stepDraw();
+}
+
+function initStep() {
+  step.canvas = $('#stepCanvas');
+  step.ctx = step.canvas.getContext('2d');
+  step.progress = stepData.xs.length + 1; // 默认全显示
+  stepDraw();
+  setTimeout(() => { step.progress = 0; stepPlay(); }, 100);
+}
+
+$('#stepPlay').addEventListener('click', stepPlay);
+
+// ---- 规模对比 ----
+function updateScale(n) {
+  const full = Math.ceil(n / 2) * Math.ceil(n / 2); // |L|≈|R|≈n/2
+  const real = Math.round(2.25 * n);
+  $('#numFull').textContent = full.toLocaleString();
+  $('#numReal').textContent = real.toLocaleString();
+  const a = Math.sqrt(full), b = Math.sqrt(real);
+  $('#barFull').style.width = Math.max(2, a / a * 100) + '%';
+  $('#barReal').style.width = Math.max(2, b / a * 100) + '%';
+  $('#ratioTag').textContent = Math.round(full / real).toLocaleString() + '× 差距';
+  $('#nVal').textContent = n.toLocaleString();
+}
+$('#nSlider').addEventListener('input', e => updateScale(+e.target.value));
+
+// ---- x′ 交互演示 ----
+function renderXO(x) {
+  const { L, R, xs } = stepData;
+  const ax = L[x].a;
+  const xp = xs[x];
+  const next = (x + 1 < xs.length) ? xs[x + 1] : R.length;
+
+  $('#xoSlider').max = L.length - 1;
+
+  // 左侧卡点行
+  $('#xoL').innerHTML = L.map((it, i) => {
+    const cls = i === x ? 'cur' : (i < x ? 'done' : '');
+    return '<div class="xo-chip ' + cls + '"><b>x=' + i + '</b><span>P' + it.p + '</span>' +
+           '<span class="a">A=' + it.a + '</span></div>';
+  }).join('');
+
+  // 右侧卡点行
+  $('#xoR').innerHTML = R.map((it, j) => {
+    let cls = 'impossible', mark = '';
+    if (j < xp) cls = 'safe';
+    else if (j === xp) { cls = 'edge'; mark = '<em>x′</em>'; }
+    else if (j <= next) cls = 'risk';
+    return '<div class="xo-chip ' + cls + '">' + mark + '<b>y=' + j + '</b><span>P' + it.p + '</span>' +
+           '<span class="a">A=' + it.a + '</span></div>';
+  }).join('');
+
+  $('#xoTag').textContent = xp >= R.length ? 'x′ 不存在（= ' + R.length + '）' : 'x′ = ' + xp;
+
+  let html;
+  if (xp >= R.length) {
+    html = '<b style="color:#7dd3fc">x = ' + x + '</b>（P=' + L[x].p + '，A=' + L[x].a + '）→ ' +
+           '<b style="color:#fbbf24">x′ 不存在</b>：右侧没有任何卡点的到达时间比 A<sub>x</sub>=' + L[x].a +
+           ' 更晚，意味着<b>之后不会再有人把车卡住</b> → 直接结算答案。这一列只贡献 <b>2</b> 个状态。';
+  } else {
+    html = '<b style="color:#7dd3fc">x = ' + x + '</b>（P=' + L[x].p + '，A=' + L[x].a + '）→ ' +
+           '<b style="color:#fbbf24">x′ = ' + xp + '</b>（P' + R[xp].p + '，A=' + R[xp].a +
+           '）是第一个「比 A<sub>x</sub> 更晚」的右侧卡点。<br>' +
+           '<span style="color:#86efac">■ 绿色 y ≤ ' + (xp - 1) + '</span>：A 全都 ≤ ' + ax +
+           '，我们现在时刻已经 ≥ ' + ax + ' 了，跑过去再折返<b>全程不卡</b> → <b>这一整段 y 合并成同一个状态</b>；<br>' +
+           '<span style="color:#f87171">■ 红色 y ∈ [' + xp + ', ' + next + ']</span>：才可能卡住，要单独展开，共 <b>' +
+           Math.max(0, next - xp + 2) + '</b> 个状态；<br>' +
+           '■ y &gt; ' + next + '：<b>不可能出现</b>（它比 x+1 还晚到，说明 x+1 早就到了，不会卡在这里）。';
+  }
+  $('#xoExplain').innerHTML = html;
+}
+
+$('#xoSlider').addEventListener('input', e => renderXO(+e.target.value));
+
+/* =====================================================================
+   标签页切换 & 启动
+   ===================================================================== */
+function switchView(name) {
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const view = $('#view-' + name);
+  if (view) view.classList.add('active');
+  if (name === 'bus') { bus.lastTs = 0; busDraw(); }
+  if (name === 'state') { stepDraw(); updateScale(+$('#nSlider').value); renderXO(+$('#xoSlider').value); }
+}
+
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    switchView(btn.dataset.view);
+    history.replaceState(null, '', '#' + btn.dataset.view);
+  });
+});
+
+initScan();
+initBus();
+initStep();
+updateScale(40);
+renderXO(0);
+window.addEventListener('resize', () => { busDraw(); stepDraw(); });
+
+// 支持 visual.html#bus / #state 直接打开指定页面
+const hash0 = (location.hash || '').replace('#', '');
+if (hash0 === 'bus' || hash0 === 'state') switchView(hash0);
+</script>
+</body>
+</html>
